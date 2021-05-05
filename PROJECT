@@ -1,0 +1,29 @@
+domain: shijunlee.net
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: helmops
+repo: github.com/shijunLee/helmops
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: shijunlee.net
+  group: helmops
+  kind: HelmRepo
+  path: github.com/shijunLee/helmops/api/v1alpha1
+  plural: helmrepos
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: shijunlee.net
+  group: helmops
+  kind: HelmOperation
+  path: github.com/shijunLee/helmops/api/v1alpha1
+  version: v1alpha1
+version: "3"
