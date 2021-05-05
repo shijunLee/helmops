@@ -33,10 +33,11 @@ type Repo struct {
 	LocalPath          string
 	Branch             string
 	authMethod         transport.AuthMethod
+	RepoName           string
 	InsecureVerifySkip bool
 }
 
-func NewRepo(url, username, password, token, branch, localPath string) (*Repo, error) {
+func NewRepo(url, username, password, token, branch, localPath, repoName string) (*Repo, error) {
 	g := &Repo{
 		URL:       url,
 		Username:  username,
@@ -44,6 +45,7 @@ func NewRepo(url, username, password, token, branch, localPath string) (*Repo, e
 		Token:     token,
 		LocalPath: localPath,
 		Branch:    branch,
+		RepoName:  repoName,
 	}
 
 	if g.Username != "" && g.Password != "" {
@@ -189,9 +191,13 @@ func (g *Repo) CheckChartExist(chartName, version string) bool {
 	return false
 }
 
-func (g *Repo) GetChartVersionUrl() (url, pathType string, err error) {
-
-	return "", "", err
+func (g *Repo) GetChartVersionUrl(chartName, chartVersion string) (url, pathType string, err error) {
+	var chartPath = path.Join(g.LocalPath, g.RepoName, "charts", chartName, chartVersion)
+	_, err = os.Stat(chartPath)
+	if err != nil {
+		return "", "", err
+	}
+	return chartPath, "file", nil
 }
 
 func (g *Repo) getChartVersions(chartName string) ([]string, error) {
@@ -199,7 +205,7 @@ func (g *Repo) getChartVersions(chartName string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var chartPath = path.Join(g.LocalPath, chartName)
+	var chartPath = path.Join(g.LocalPath, g.RepoName, "charts", chartName)
 	fileInfo, err := os.Stat(chartPath)
 	if err != nil {
 		return nil, err

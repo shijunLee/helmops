@@ -16,7 +16,23 @@ spec:
     singular: helmoperation
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.chartName
+      name: ChartName
+      type: string
+    - jsonPath: .spec.chartVersion
+      name: ChartVersion
+      type: string
+    - jsonPath: .spec.chartRepoName
+      name: RepoName
+      type: string
+    - jsonPath: .spec.autoUpdate
+      name: AutoUpdate
+      type: bool
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: HelmOperation is the Schema for the helmoperations API
@@ -36,13 +52,175 @@ spec:
           spec:
             description: HelmOperationSpec defines the desired state of HelmOperation
             properties:
-              foo:
-                description: Foo is an example field of HelmOperation. Edit helmoperation_types.go
-                  to remove/update
+              autoUpdate:
+                description: AutoUpdate is auto update for release
+                type: boolean
+              chartName:
+                description: ChartName the chart name which will install
                 type: string
+              chartRepoName:
+                description: ChartRepoName the helmops repo name
+                type: string
+              chartVersion:
+                description: ChartVersion the version for the chart will install
+                type: string
+              create:
+                description: Create the chart create options
+                properties:
+                  createNamespace:
+                    description: CreateNamespace create namespace when install
+                    type: boolean
+                  description:
+                    description: Description install custom description
+                    type: string
+                  disableOpenAPIValidation:
+                    description: DisableOpenAPIValidation disable openapi validation
+                      on kubernetes install
+                    type: boolean
+                  generateName:
+                    description: GenerateName auto generate name for a release
+                    type: boolean
+                  isUpgrade:
+                    description: IsUpgrade is upgrade dependence charts
+                    type: boolean
+                  noHook:
+                    description: NoHook do not use hook
+                    type: boolean
+                  replace:
+                    description: Replace  while resource exist do replace operation
+                    type: boolean
+                  skipCRDs:
+                    description: SkipCRDs is skip crd when install
+                    type: boolean
+                  timeout:
+                    description: Timeout is the timeout for this operation
+                    format: int64
+                    type: integer
+                  wait:
+                    description: Wait wait  runtime.Object is running
+                    type: boolean
+                  waitForJobs:
+                    description: WaitForJobs wait job exec success
+                    type: boolean
+                type: object
+              uninstall:
+                description: Uninstall the chart uninstall options
+                properties:
+                  description:
+                    description: Description install custom description
+                    type: string
+                  disableHooks:
+                    description: DisableHooks disables hook processing if set to true.
+                    type: boolean
+                  keepHistory:
+                    description: KeepHistory keep chart install history
+                    type: boolean
+                  timeout:
+                    description: TimeOut time out time
+                    format: int64
+                    type: integer
+                type: object
+              upgrade:
+                description: Upgrade the chart upgrade options
+                properties:
+                  atomic:
+                    description: Atomic, if true, will roll back on failure.
+                    type: boolean
+                  cleanupOnFail:
+                    description: CleanupOnFail will, if true, cause the upgrade to
+                      delete newly-created resources on a failed update.
+                    type: boolean
+                  description:
+                    description: Description is the description of this operation
+                    type: string
+                  devel:
+                    description: Devel indicates that the operation is done in devel
+                      mode.
+                    type: boolean
+                  disableHooks:
+                    description: DisableHooks disables hook processing if set to true.
+                    type: boolean
+                  disableOpenAPIValidation:
+                    description: DisableOpenAPIValidation controls whether OpenAPI
+                      validation is enforced.
+                    type: boolean
+                  force:
+                    description: "Force will, if set to `true`, ignore certain warnings
+                      and perform the upgrade anyway. \n This should be used with
+                      caution."
+                    type: boolean
+                  install:
+                    description: Install Setting this to `true` will NOT cause `Upgrade`
+                      to perform an install if the release does not exist. That process
+                      must be handled by creating an Install action directly. See
+                      cmd/upgrade.go for an example of how this flag is used.
+                    type: boolean
+                  maxHistory:
+                    description: MaxHistory limits the maximum number of revisions
+                      saved per release
+                    type: integer
+                  recreate:
+                    description: Recreate will (if true) recreate pods after a rollback.
+                    type: boolean
+                  resetValues:
+                    description: ResetValues will reset the values to the chart's
+                      built-ins rather than merging with existing.
+                    type: boolean
+                  reuseValues:
+                    description: ReuseValues will re-use the user's last supplied
+                      values.
+                    type: boolean
+                  skipCRDs:
+                    description: SkipCRDs skips installing CRDs when install flag
+                      is enabled during upgrade
+                    type: boolean
+                  subNotes:
+                    description: SubNotes determines whether sub-notes are rendered
+                      in the chart.
+                    type: boolean
+                  timeout:
+                    description: Timeout is the timeout for this operation
+                    format: int64
+                    type: integer
+                  wait:
+                    description: Wait determines whether the wait operation should
+                      be performed after the upgrade is requested.
+                    type: boolean
+                  waitForJobs:
+                    description: WaitForJobs wait for jobs exec success
+                    type: boolean
+                type: object
+              values:
+                description: Values the helm install values , if values update while
+                  update the helm release
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
           status:
             description: HelmOperationStatus defines the observed state of HelmOperation
+            properties:
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  type: object
+                type: array
+              updateTime:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                format: date-time
+                type: string
             type: object
         type: object
     served: true

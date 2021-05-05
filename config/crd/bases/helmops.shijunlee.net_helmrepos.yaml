@@ -16,7 +16,20 @@ spec:
     singular: helmrepo
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.repoName
+      name: Repo_Name
+      type: string
+    - jsonPath: .spec.repoURL
+      name: URL
+      type: string
+    - jsonPath: .spec.repoType
+      name: Type
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: HelmRepo is the Schema for the helmrepos API
@@ -36,13 +49,51 @@ spec:
           spec:
             description: HelmRepoSpec defines the desired state of HelmRepo
             properties:
-              foo:
-                description: Foo is an example field of HelmRepo. Edit helmrepo_types.go
-                  to remove/update
+              insecureSkipTLS:
+                description: InsecureSkipTLS is skip tls verify
+                type: boolean
+              password:
+                description: Password the user password for chart repo auth
+                type: string
+              repoName:
+                description: RepoName Chart repo name
+                type: string
+              repoType:
+                description: RepoType Chart repo type support git or chart museum
+                type: string
+              repoURL:
+                description: RepoURL chart repo url
+                type: string
+              tlsSecretName:
+                description: TLSSecretName if use tls get the tls secret name <em>notice:</em>
+                  current not support
+                type: string
+              username:
+                description: Username the user name for chart repo auth
                 type: string
             type: object
           status:
             description: HelmRepoStatus defines the observed state of HelmRepo
+            properties:
+              conditions:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true

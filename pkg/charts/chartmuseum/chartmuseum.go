@@ -8,13 +8,15 @@ import (
 )
 
 var (
-	ChartNotExistErr = errors.New("chart not exit for chartMuseum")
+	ChartNotExistErr        = errors.New("chart not exit for chartMuseum")
+	ChartVersionNotExistErr = errors.New("chart version not exit for chartMuseum")
 )
 
 type ChartMuseum struct {
 	URL                string
 	Username           string
 	Password           string
+	RepoName           string
 	InsecureVerifySkip bool
 }
 
@@ -24,6 +26,7 @@ func (c *ChartMuseum) loadIndex() (map[string]repo.ChartVersions, error) {
 		Username:              c.Username,
 		Password:              c.Password,
 		InsecureSkipTLSVerify: c.InsecureVerifySkip,
+		RepoName:              c.RepoName,
 	}
 	repoIndex, err := repoOptions.GetLatestRepoIndex()
 	if err != nil {
@@ -40,9 +43,21 @@ func (c *ChartMuseum) GetChartLastVersion(chartName string) (string, error) {
 	return utils.GetLatestSemver(vers)
 }
 
-func (c *ChartMuseum) GetChartVersionUrl() (url, pathType string, err error) {
-
-	return "", "", err
+func (c *ChartMuseum) GetChartVersionUrl(chartName, chartVersion string) (url, pathType string, err error) {
+	chartVersions, err := c.loadIndex()
+	if err != nil {
+		return "", "", err
+	}
+	if versions, ok := chartVersions[chartName]; ok {
+		for _, item := range versions {
+			if item.Version == chartVersion {
+				return item.URLs[0], "http", nil
+			}
+		}
+	} else {
+		return "", "", ChartNotExistErr
+	}
+	return "", "", ChartVersionNotExistErr
 }
 
 func (c *ChartMuseum) CheckChartExist(chartName, version string) bool {

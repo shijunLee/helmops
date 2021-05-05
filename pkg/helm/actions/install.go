@@ -299,7 +299,7 @@ func (i *InstallOptions) Run() (*release.Release, error) {
 	installConfig.ReleaseName = i.ReleaseName
 	installConfig.IsUpgrade = i.IsUpgrade
 	// helm 3.3.1 not support
-	//installConfig.WaitForJobs = i.WaitForJobs
+	installConfig.WaitForJobs = i.WaitForJobs
 	installConfig.Replace = i.Replace
 	installConfig.Wait = i.Wait
 	installConfig.Namespace = i.Namespace
