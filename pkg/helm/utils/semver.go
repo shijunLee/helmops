@@ -25,3 +25,15 @@ func GetLatestSemver(vers []string) (string, error) {
 	})
 	return versions[0].String(), nil
 }
+
+func GetVersionGreaterThan(v1, v2 string) bool {
+	version1, err := semver.NewVersion(v1)
+	if err != nil {
+		return false
+	}
+	version2, err := semver.NewVersion(v2)
+	if err != nil {
+		return false
+	}
+	return version1.GreaterThan(version2)
+}

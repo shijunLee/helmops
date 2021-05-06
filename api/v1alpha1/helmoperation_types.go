@@ -150,6 +150,7 @@ type HelmOperationStatus struct {
 	LastUpdateTime      *metav1.Time `json:"updateTime,omitempty"`
 	Conditions          []Condition  `json:"conditions,omitempty"`
 	CurrentChartVersion string       `json:"currentChartVersion,omitempty"`
+	ReleaseStatus       string       `json:"releaseStatus"`
 }
 
 type Condition struct {

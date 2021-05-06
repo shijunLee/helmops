@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/shijunLee/helmops/pkg/helm/utils"
+
 	"github.com/shijunLee/helmops/pkg/charts"
 
 	"helm.sh/helm/v3/pkg/storage/driver"
@@ -134,7 +136,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		chartOptions.ChartURL = url
 	}
 
-	// if release not create  do create job
+	// if release not create  do create
 	if notCreate {
 		var createInfo = helmOperation.Spec.Create
 		installOptions := actions.InstallOptions{
@@ -160,15 +162,76 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			log.Error(err, "install release user helm client error")
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
 		}
+		helmOperation.Status.CurrentChartVersion = release.Chart.Metadata.Version
+		helmOperation.Status.ReleaseStatus = string(release.Info.Status)
+		err = r.Client.Status().Update(ctx, helmOperation)
+		if err != nil {
+			// if repo not found ,do not process this operation
+			//todo update status for this helmOperation , the chart version not exist
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
 	} else {
 		var values = release.Config
 		var installChartVersion = release.Chart.Metadata.Version
 		// if version change or value changes do update process
 		if (helmOperation.Spec.ChartVersion != installChartVersion && helmOperation.Status.CurrentChartVersion != installChartVersion) ||
 			!reflect.DeepEqual(values, helmOperation.Spec.Values.Object) {
-
+			// if the installed helm release chart version great the the operation, update operation version and return
+			if utils.GetVersionGreaterThan(installChartVersion, helmOperation.Status.CurrentChartVersion) {
+				helmOperation.Status.CurrentChartVersion = installChartVersion
+				if reflect.DeepEqual(values, helmOperation.Spec.Values.Object) {
+					helmOperation.Status.ReleaseStatus = string(release.Info.Status)
+					err = r.Client.Status().Update(ctx, helmOperation)
+					if err != nil {
+						// if repo not found ,do not process this operation
+						//todo update status for this helmOperation , the chart version not exist
+						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+					}
+					return ctrl.Result{}, nil
+				}
+			}
+			updateConfig := helmOperation.Spec.Upgrade
+			chart := *chartOptions
+			if utils.GetVersionGreaterThan(helmOperation.Status.CurrentChartVersion, helmOperation.Spec.ChartVersion) {
+				chart.ChartVersion = helmOperation.Status.CurrentChartVersion
+			}
+			updateOption := actions.UpgradeOptions{
+				Values:                   helmOperation.Spec.Values.Object,
+				Install:                  updateConfig.Install,
+				Devel:                    updateConfig.Devel,
+				Namespace:                helmOperation.Namespace,
+				SkipCRDs:                 updateConfig.SkipCRDs,
+				Timeout:                  updateConfig.Timeout,
+				Wait:                     updateConfig.Wait,
+				DisableHooks:             updateConfig.DisableHooks,
+				Force:                    updateConfig.Force,
+				ResetValues:              updateConfig.ResetValues,
+				ReuseValues:              updateConfig.ReuseValues,
+				Recreate:                 updateConfig.Recreate,
+				MaxHistory:               updateConfig.MaxHistory,
+				Atomic:                   updateConfig.Atomic,
+				CleanupOnFail:            updateConfig.CleanupOnFail,
+				SubNotes:                 updateConfig.SubNotes,
+				Description:              updateConfig.Description,
+				DisableOpenAPIValidation: updateConfig.DisableOpenAPIValidation,
+				WaitForJobs:              updateConfig.WaitForJobs,
+				ChartOpts:                &chart,
+				KubernetesOptions:        actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+			}
+			release, err = updateOption.Run()
+			if err != nil {
+				log.Error(err, "upgrade release user helm client error")
+				return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+			}
+			helmOperation.Status.CurrentChartVersion = release.Chart.Metadata.Version
+			helmOperation.Status.ReleaseStatus = string(release.Info.Status)
+			err = r.Client.Status().Update(ctx, helmOperation)
+			if err != nil {
+				// if repo not found ,do not process this operation
+				//todo update status for this helmOperation , the chart version not exist
+				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+			}
 		}
-
 	}
 
 	return ctrl.Result{}, nil
