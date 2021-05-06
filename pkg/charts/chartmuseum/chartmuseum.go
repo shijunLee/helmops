@@ -13,11 +13,26 @@ var (
 )
 
 type ChartMuseum struct {
-	URL                string
-	Username           string
-	Password           string
-	RepoName           string
-	InsecureVerifySkip bool
+	URL             string
+	Username        string
+	Password        string
+	RepoName        string
+	InsecureSkipTLS bool
+}
+
+func NewChartMuseum(url, username, password, repoName string, insecureSkipTLS bool) (*ChartMuseum, error) {
+	c := &ChartMuseum{
+		URL:             url,
+		Username:        username,
+		Password:        password,
+		RepoName:        repoName,
+		InsecureSkipTLS: insecureSkipTLS,
+	}
+	_, err := c.loadIndex()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (c *ChartMuseum) loadIndex() (map[string]repo.ChartVersions, error) {
@@ -25,7 +40,7 @@ func (c *ChartMuseum) loadIndex() (map[string]repo.ChartVersions, error) {
 		RepoURL:               c.URL,
 		Username:              c.Username,
 		Password:              c.Password,
-		InsecureSkipTLSVerify: c.InsecureVerifySkip,
+		InsecureSkipTLSVerify: c.InsecureSkipTLS,
 		RepoName:              c.RepoName,
 	}
 	repoIndex, err := repoOptions.GetLatestRepoIndex()

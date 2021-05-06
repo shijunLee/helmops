@@ -26,26 +26,27 @@ var (
 )
 
 type Repo struct {
-	URL                string
-	Username           string
-	Password           string
-	Token              string
-	LocalPath          string
-	Branch             string
-	authMethod         transport.AuthMethod
-	RepoName           string
-	InsecureVerifySkip bool
+	URL             string
+	Username        string
+	Password        string
+	Token           string
+	LocalPath       string
+	Branch          string
+	authMethod      transport.AuthMethod
+	RepoName        string
+	InsecureSkipTLS bool
 }
 
-func NewRepo(url, username, password, token, branch, localPath, repoName string) (*Repo, error) {
+func NewRepo(url, username, password, token, branch, localPath, repoName string, insecureSkipTLS bool) (*Repo, error) {
 	g := &Repo{
-		URL:       url,
-		Username:  username,
-		Password:  password,
-		Token:     token,
-		LocalPath: localPath,
-		Branch:    branch,
-		RepoName:  repoName,
+		URL:             url,
+		Username:        username,
+		Password:        password,
+		Token:           token,
+		LocalPath:       localPath,
+		Branch:          branch,
+		RepoName:        repoName,
+		InsecureSkipTLS: insecureSkipTLS,
 	}
 
 	if g.Username != "" && g.Password != "" {
@@ -115,7 +116,7 @@ func (g *Repo) Clone() error {
 	var cloneOptions = &git.CloneOptions{
 		URL:             g.URL,
 		Progress:        os.Stdout,
-		InsecureSkipTLS: g.InsecureVerifySkip,
+		InsecureSkipTLS: g.InsecureSkipTLS,
 		ReferenceName:   plumbing.NewBranchReferenceName(g.Branch),
 	}
 	cloneOptions.Auth = g.authMethod
@@ -141,7 +142,7 @@ func (g *Repo) Pull() error {
 			return err
 		}
 		var fetchOptions = &git.FetchOptions{
-			InsecureSkipTLS: g.InsecureVerifySkip,
+			InsecureSkipTLS: g.InsecureSkipTLS,
 		}
 		fetchOptions.Auth = g.authMethod
 		err = r.Fetch(fetchOptions)

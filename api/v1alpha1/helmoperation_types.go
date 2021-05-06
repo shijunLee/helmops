@@ -166,6 +166,7 @@ type Condition struct {
 //+kubebuilder:printcolumn:name="RepoName",type="string",JSONPath=".spec.chartRepoName"
 //+kubebuilder:printcolumn:name="AutoUpdate",type="bool",JSONPath=".spec.autoUpdate"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+
 // HelmOperation is the Schema for the helmoperations API
 type HelmOperation struct {
 	metav1.TypeMeta   `json:",inline"`
