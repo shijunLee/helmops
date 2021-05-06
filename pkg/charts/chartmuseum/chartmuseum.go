@@ -103,3 +103,23 @@ func (c *ChartMuseum) getChartVersions(chartName string) ([]string, error) {
 	}
 	return vers, nil
 }
+
+func (c *ChartMuseum) ListCharts() (map[string]utils.CommonChartVersions, error) {
+	index, err := c.loadIndex()
+	if err != nil {
+		return nil, err
+	}
+	var result = map[string]utils.CommonChartVersions{}
+	for key, versions := range index {
+		for _, item := range versions {
+			commonCharts, ok := result[key]
+			if ok {
+				commonCharts = append(commonCharts, utils.CommonChartVersion{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0]})
+				result[key] = commonCharts
+			} else {
+				result[key] = utils.CommonChartVersions{{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0]}}
+			}
+		}
+	}
+	return result, nil
+}

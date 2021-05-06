@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/shijunLee/helmops/pkg/helm/utils"
 
@@ -233,4 +234,44 @@ func (g *Repo) getChartVersions(chartName string) ([]string, error) {
 		return nil, errors.New("not found the chart from git repo")
 	}
 	return versions, nil
+}
+
+func (g *Repo) ListCharts() (map[string]utils.CommonChartVersions, error) {
+	err := g.Pull()
+	if err != nil {
+		return nil, err
+	}
+	var result = map[string]utils.CommonChartVersions{}
+	var chartPath = path.Join(g.LocalPath, g.RepoName, "charts")
+	fileInfo, err := os.Stat(chartPath)
+	if err != nil {
+		return nil, err
+	}
+	if !fileInfo.IsDir() {
+		return nil, errors.New("current chart file path not a dir")
+	}
+
+	var lock = sync.Mutex{}
+	err = filepath.WalkDir(chartPath, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			relativePaths := strings.TrimPrefix(path, chartPath)
+			relativePaths = strings.TrimPrefix(relativePaths, "/")
+			relativePathArray := strings.Split(relativePaths, "/")
+			if len(relativePathArray) == 2 {
+				chartName := relativePathArray[0]
+				version := relativePathArray[1]
+				versions, ok := result[chartName]
+				if ok {
+					lock.Lock()
+					defer lock.Unlock()
+					versions = append(versions, utils.CommonChartVersion{Name: chartName, Version: version, URLType: "file", URL: path})
+					result[chartName] = versions
+				} else {
+					result[chartName] = utils.CommonChartVersions{{Name: chartName, Version: version, URLType: "file", URL: path}}
+				}
+			}
+		}
+		return nil
+	})
+	return result, nil
 }

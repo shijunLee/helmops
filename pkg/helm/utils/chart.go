@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/Masterminds/semver/v3"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
@@ -45,4 +46,37 @@ func DownloadChartArchive(chartUrl, username, password string, caPath, certPath,
 		return nil, errors.New("download chart return 401 from repo")
 	}
 	return bytes.NewBuffer(data), nil
+}
+
+//CommonChartVersion common chart info,notice this code will be rebuild
+type CommonChartVersion struct {
+	Name    string
+	Version string
+	URL     string
+	URLType string
+	Digest  string
+}
+
+// CommonChartVersions is a list of versioned chart references.
+// Implements a sorter on Version.
+type CommonChartVersions []CommonChartVersion
+
+// Len returns the length.
+func (c CommonChartVersions) Len() int { return len(c) }
+
+// Swap swaps the position of two items in the versions slice.
+func (c CommonChartVersions) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+
+// Less returns true if the version of entry a is less than the version of entry b.
+func (c CommonChartVersions) Less(a, b int) bool {
+	// Failed parse pushes to the back.
+	i, err := semver.NewVersion(c[a].Version)
+	if err != nil {
+		return true
+	}
+	j, err := semver.NewVersion(c[b].Version)
+	if err != nil {
+		return false
+	}
+	return i.LessThan(j)
 }
