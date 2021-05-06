@@ -117,7 +117,7 @@ func (c *ChartMuseum) ListCharts() (map[string]utils.CommonChartVersions, error)
 				commonCharts = append(commonCharts, utils.CommonChartVersion{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0]})
 				result[key] = commonCharts
 			} else {
-				result[key] = utils.CommonChartVersions{{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0]}}
+				result[key] = utils.CommonChartVersions{{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0], Digest: item.Digest}}
 			}
 		}
 	}

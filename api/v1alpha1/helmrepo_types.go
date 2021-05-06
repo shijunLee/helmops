@@ -56,6 +56,12 @@ type HelmRepoSpec struct {
 	//TLSSecretName if use tls get the tls secret name
 	// <em>notice:</em> current not support
 	TLSSecretName string `json:"tlsSecretName,omitempty"`
+
+	// git auth token for git operation
+	GitAuthToken string `json:"gitAuthToken,omitempty"`
+
+	// if user git repo must set git branch ,if not set default is master
+	GitBranch string `json:"gitBranch,omitempty"`
 }
 
 // HelmRepoStatus defines the observed state of HelmRepo

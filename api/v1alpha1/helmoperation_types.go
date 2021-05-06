@@ -147,8 +147,9 @@ type Uninstall struct {
 type HelmOperationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	LastUpdateTime *metav1.Time `json:"updateTime,omitempty"`
-	Conditions     []Condition  `json:"conditions,omitempty"`
+	LastUpdateTime      *metav1.Time `json:"updateTime,omitempty"`
+	Conditions          []Condition  `json:"conditions,omitempty"`
+	CurrentChartVersion string       `json:"currentChartVersion,omitempty"`
 }
 
 type Condition struct {

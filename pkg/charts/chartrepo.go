@@ -44,7 +44,7 @@ type ChartRepo struct {
 	Cert       []byte
 	RootCA     []byte
 	PrivateKey []byte
-	operation  ChartRepoInterface
+	Operation  ChartRepoInterface
 	CancelChan chan int
 }
 
@@ -77,7 +77,7 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 		InsecureSkipTLS: insecureSkipTLS,
 		Period:          period,
 		LocalCache:      localCache,
-		operation:       operation,
+		Operation:       operation,
 		CancelChan:      make(chan int),
 	}
 	return c, nil
@@ -89,7 +89,7 @@ func (c *ChartRepo) StartTimerJobs(callbackFunc func(chart *utils.CommonChartVer
 	for {
 		select {
 		case <-timeTicker.C:
-			chartVersions, err := c.operation.ListCharts()
+			chartVersions, err := c.Operation.ListCharts()
 			if err != nil {
 				callbackFunc(nil, err)
 				continue

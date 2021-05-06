@@ -18,20 +18,37 @@ package controllers
 
 import (
 	"context"
+	"reflect"
+	"time"
+
+	"github.com/shijunLee/helmops/pkg/charts"
+
+	"helm.sh/helm/v3/pkg/storage/driver"
+
+	"k8s.io/client-go/rest"
+
+	"github.com/shijunLee/helmops/pkg/helm/actions"
+
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/go-logr/logr"
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
 
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+const (
+	helmOperationFinalizer = "finalizer.helmoperation.helmops.shijunlee.net"
 )
 
 // HelmOperationReconciler reconciles a HelmOperation object
 type HelmOperationReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log        logr.Logger
+	Scheme     *runtime.Scheme
+	RestConfig *rest.Config
 }
 
 //+kubebuilder:rbac:groups=helmops.shijunlee.net,resources=helmoperations,verbs=get;list;watch;create;update;patch;delete
@@ -48,11 +65,116 @@ type HelmOperationReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = r.Log.WithValues("helmoperation", req.NamespacedName)
+	log := r.Log.WithValues("helmoperation", req.NamespacedName)
 
-	// your logic here
+	helmOperation := &helmopsv1alpha1.HelmOperation{}
+	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, helmOperation)
+	if err != nil {
+		log.Error(err, "find helm operation resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
+		return ctrl.Result{}, err
+	}
+	if !helmOperation.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(helmOperation, helmOperationFinalizer) {
+			controllerutil.AddFinalizer(helmOperation, helmRepoFinalizer)
+			err = r.Client.Update(ctx, helmOperation)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		if err = r.removeFinalizer(ctx, helmOperation); err != nil {
+			return ctrl.Result{}, err
+		}
+		controllerutil.RemoveFinalizer(helmOperation, helmRepoFinalizer)
+	}
+	var getOptions = actions.GetOptions{
+		ReleaseName:       helmOperation.Name,
+		Namespace:         helmOperation.Namespace,
+		KubernetesOptions: actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+	}
+	var notCreate = false
+	release, err := getOptions.Run()
+	if err != nil {
+		if err == driver.ErrReleaseNotFound {
+			notCreate = true
+		}
+	}
+	chartOptions := &actions.ChartOpts{
+		ChartName:    helmOperation.Spec.ChartName,
+		ChartVersion: helmOperation.Spec.ChartVersion,
+	}
+	repoInfo, ok := repoCache.Load(helmOperation.Spec.ChartRepoName)
+	if !ok {
+		// if repo not found ,do not process this operation
+		//todo update status for this helmOperation
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	chartRepo, ok := repoInfo.(*charts.ChartRepo)
+	if !ok {
+		// if repo not found ,do not process this operation
+		//todo update status for this helmOperation
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+	if !chartRepo.Operation.CheckChartExist(helmOperation.Spec.ChartName, helmOperation.Spec.ChartVersion) {
+		// if repo not found ,do not process this operation
+		//todo update status for this helmOperation , the chart version not exist
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+	url, pathType, err := chartRepo.Operation.GetChartVersionUrl(helmOperation.Spec.ChartName, helmOperation.Spec.ChartVersion)
+	if err != nil {
+		// if repo not found ,do not process this operation
+		//todo update status for this helmOperation , the chart version not exist
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+	switch pathType {
+	case "file":
+		chartOptions.LocalPath = url
+	case "http":
+		chartOptions.ChartURL = url
+	}
+
+	// if release not create  do create job
+	if notCreate {
+		var createInfo = helmOperation.Spec.Create
+		installOptions := actions.InstallOptions{
+			KubernetesOptions:        actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+			ReleaseName:              helmOperation.Name,
+			Namespace:                helmOperation.Namespace,
+			CreateNamespace:          helmOperation.Spec.Create.CreateNamespace,
+			ChartOpts:                chartOptions,
+			Description:              createInfo.Description,
+			SkipCRDs:                 createInfo.SkipCRDs,
+			Timeout:                  createInfo.Timeout,
+			NoHook:                   createInfo.NoHook,
+			GenerateName:             createInfo.GenerateName,
+			DisableOpenAPIValidation: createInfo.DisableOpenAPIValidation,
+			IsUpgrade:                createInfo.IsUpgrade,
+			WaitForJobs:              createInfo.WaitForJobs,
+			Replace:                  createInfo.Replace,
+			Wait:                     createInfo.Wait,
+			Values:                   helmOperation.Spec.Values.Object,
+		}
+		release, err = installOptions.Run()
+		if err != nil {
+			log.Error(err, "install release user helm client error")
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+		}
+	} else {
+		var values = release.Config
+		var installChartVersion = release.Chart.Metadata.Version
+		// if version change or value changes do update process
+		if (helmOperation.Spec.ChartVersion != installChartVersion && helmOperation.Status.CurrentChartVersion != installChartVersion) ||
+			!reflect.DeepEqual(values, helmOperation.Spec.Values.Object) {
+
+		}
+
+	}
 
 	return ctrl.Result{}, nil
+}
+func (r *HelmOperationReconciler) removeFinalizer(ctx context.Context, operation *helmopsv1alpha1.HelmOperation) error {
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
