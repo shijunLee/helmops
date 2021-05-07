@@ -101,14 +101,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&helmopsv1alpha1.HelmOperation{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperation")
-		os.Exit(1)
-	}
-	if err = (&helmopsv1alpha1.HelmRepo{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "HelmRepo")
-		os.Exit(1)
-	}
 	if err = (&helmopsv1alpha1.HelmRepo{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "HelmRepo")
 		os.Exit(1)
