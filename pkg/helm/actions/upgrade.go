@@ -1,10 +1,19 @@
 package actions
 
 import (
+	"bytes"
+	"context"
 	"time"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/resource"
 
 	"github.com/pkg/errors"
 	helmactions "helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/release"
 )
@@ -67,6 +76,7 @@ type UpgradeOptions struct {
 	KubernetesOptions        *KubernetesClient
 	Values                   map[string]interface{}
 	ReleaseName              string
+	UpgradeCRDs              bool
 }
 
 func (i *UpgradeOptions) Run() (*release.Release, error) {
@@ -99,5 +109,76 @@ func (i *UpgradeOptions) Run() (*release.Release, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "load chart from config error")
 	}
+	if i.UpgradeCRDs {
+		var crds = chartInfo.CRDObjects()
+		err := updateCRDs(crds, cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return upgradeConfig.Run(i.ReleaseName, chartInfo, i.Values)
+}
+
+func updateCRDs(crds []chart.CRD, cfg *helmactions.Configuration) error {
+	totalItems := []*resource.Info{}
+	for _, obj := range crds {
+		// Read in the resources
+		res, err := cfg.KubeClient.Build(bytes.NewBuffer(obj.File.Data), false)
+		if err != nil {
+			return errors.Wrapf(err, "failed to install CRD %s", obj.Name)
+		}
+		restConfig, err := cfg.RESTClientGetter.ToRESTConfig()
+		if err != nil {
+			return err
+		}
+		apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+		if err != nil {
+			return err
+		}
+		for _, item := range res {
+			if item.Object.GetObjectKind().GroupVersionKind().Version == "v1" {
+				obj, ok := item.Object.(*apiextensionsv1.CustomResourceDefinition)
+				if !ok {
+					cfg.Log("object not custom resource definition %s %s", item.Name, item.Namespace)
+					continue
+				}
+				_, err := apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().
+					Update(context.Background(), obj, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
+			} else if item.Object.GetObjectKind().GroupVersionKind().Version == "v1beta1" {
+				obj, ok := item.Object.(*apiextensionsv1beta1.CustomResourceDefinition)
+				if !ok {
+					cfg.Log("object not custom resource definition %s %s", item.Name, item.Namespace)
+					continue
+				}
+				_, err := apiExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().
+					Update(context.Background(), obj, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
+			}
+		}
+		totalItems = append(totalItems, res...)
+	}
+	if len(totalItems) > 0 {
+		// Invalidate the local cache, since it will not have the new CRDs
+		// present.
+		discoveryClient, err := cfg.RESTClientGetter.ToDiscoveryClient()
+		if err != nil {
+			return err
+		}
+		cfg.Log("Clearing discovery cache")
+		discoveryClient.Invalidate()
+		// Give time for the CRD to be recognized.
+
+		if err := cfg.KubeClient.Wait(totalItems, 60*time.Second); err != nil {
+			return err
+		}
+
+		// Make sure to force a rebuild of the cache.
+		discoveryClient.ServerGroups()
+	}
+	return nil
 }

@@ -354,7 +354,8 @@ func (r *HelmRepoReconciler) repoCallBack(chart *utils.CommonChartVersion, err e
 		return
 	}
 	for _, item := range operationList.Items {
-		if item.Spec.ChartRepoName == chart.RepoName &&
+		if item.Spec.AutoUpdate &&
+			item.Spec.ChartRepoName == chart.RepoName &&
 			item.Spec.ChartName == chart.Name &&
 			item.Spec.ChartVersion != chart.Version {
 			r.queue.Add(syncUpdateHelmRelease{
