@@ -78,7 +78,8 @@ type UpgradeOptions struct {
 	KubernetesOptions        *KubernetesClient
 	Values                   map[string]interface{}
 	ReleaseName              string
-	UpgradeCRDs              bool
+	// upgrade crd in upgrade actions
+	UpgradeCRDs bool
 }
 
 func (i *UpgradeOptions) Run() (*release.Release, error) {
