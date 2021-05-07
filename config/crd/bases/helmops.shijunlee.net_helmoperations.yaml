@@ -112,6 +112,9 @@ spec:
                   disableHooks:
                     description: DisableHooks disables hook processing if set to true.
                     type: boolean
+                  doNotDeleteRelease:
+                    description: do not delete helm release if helm operation is delete
+                    type: boolean
                   keepHistory:
                     description: KeepHistory keep chart install history
                     type: boolean
@@ -215,12 +218,18 @@ spec:
                       type: string
                   type: object
                 type: array
+              currentChartVersion:
+                type: string
+              releaseStatus:
+                type: string
               updateTime:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                   of cluster Important: Run "make" to regenerate code after modifying
                   this file'
                 format: date-time
                 type: string
+            required:
+            - releaseStatus
             type: object
         type: object
     served: true

@@ -49,14 +49,18 @@ spec:
           spec:
             description: HelmRepoSpec defines the desired state of HelmRepo
             properties:
+              gitAuthToken:
+                description: git auth token for git operation
+                type: string
+              gitBranch:
+                description: if user git repo must set git branch ,if not set default
+                  is master
+                type: string
               insecureSkipTLS:
                 description: InsecureSkipTLS is skip tls verify
                 type: boolean
               password:
                 description: Password the user password for chart repo auth
-                type: string
-              repoName:
-                description: RepoName Chart repo name
                 type: string
               repoType:
                 description: RepoType Chart repo type support git or chart museum
