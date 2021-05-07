@@ -1,0 +1,20 @@
+# permissions for end users to view helmoperationcontrollerreversions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: helmoperationcontrollerreversion-viewer-role
+rules:
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmoperationcontrollerreversions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmoperationcontrollerreversions/status
+  verbs:
+  - get

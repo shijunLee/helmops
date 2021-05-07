@@ -1,0 +1,112 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: helmrepos.helmops.shijunlee.net
+spec:
+  group: helmops.shijunlee.net
+  names:
+    kind: HelmRepo
+    listKind: HelmRepoList
+    plural: helmrepos
+    singular: helmrepo
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.repoName
+      name: Repo_Name
+      type: string
+    - jsonPath: .spec.repoURL
+      name: URL
+      type: string
+    - jsonPath: .spec.repoType
+      name: Type
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: HelmRepo is the Schema for the helmrepos API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HelmRepoSpec defines the desired state of HelmRepo
+            properties:
+              gitAuthToken:
+                description: git auth token for git operation
+                type: string
+              gitBranch:
+                description: if user git repo must set git branch ,if not set default
+                  is master
+                type: string
+              insecureSkipTLS:
+                description: InsecureSkipTLS is skip tls verify
+                type: boolean
+              password:
+                description: Password the user password for chart repo auth
+                type: string
+              repoType:
+                description: RepoType Chart repo type support git or chart museum
+                type: string
+              repoURL:
+                description: RepoURL chart repo url
+                type: string
+              tlsSecretName:
+                description: TLSSecretName if use tls get the tls secret name <em>notice:</em>
+                  current not support
+                type: string
+              username:
+                description: Username the user name for chart repo auth
+                type: string
+            type: object
+          status:
+            description: HelmRepoStatus defines the observed state of HelmRepo
+            properties:
+              conditions:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

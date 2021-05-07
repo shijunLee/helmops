@@ -1,0 +1,7 @@
+apiVersion: helmops.shijunlee.net/v1alpha1
+kind: HelmRepo
+metadata:
+  name: helmrepo-sample
+spec:
+  # Add fields here
+  foo: bar

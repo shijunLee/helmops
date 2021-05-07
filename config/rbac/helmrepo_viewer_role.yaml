@@ -1,0 +1,20 @@
+# permissions for end users to view helmrepos.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: helmrepo-viewer-role
+rules:
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmrepos
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmrepos/status
+  verbs:
+  - get
