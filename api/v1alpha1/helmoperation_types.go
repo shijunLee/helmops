@@ -141,6 +141,8 @@ type Uninstall struct {
 	Timeout time.Duration `json:"timeout,omitempty"`
 	// Description install custom description
 	Description string `json:"description,omitempty"`
+	// do not delete helm release if helm operation is delete
+	DoNotDeleteRelease bool `json:"doNotDeleteRelease,omitempty"`
 }
 
 // HelmOperationStatus defines the observed state of HelmOperation

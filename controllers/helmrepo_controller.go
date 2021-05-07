@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -117,6 +118,18 @@ func (r *HelmRepoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+//removeFinalizer Stop the job ,do not delete installed helm release
 func (r *HelmRepoReconciler) removeFinalizer(ctx context.Context, helmRepo *helmopsv1alpha1.HelmRepo) error {
+	repoInfo, ok := repoCache.Load(helmRepo.Name)
+	if !ok {
+		return nil
+	}
+	chartRepo, ok := repoInfo.(*charts.ChartRepo)
+	if !ok {
+		// if repo not found ,do not process this operation
+		//todo update status for this helmOperation
+		return errors.New("convert repo item to cache")
+	}
+	chartRepo.Close()
 	return nil
 }

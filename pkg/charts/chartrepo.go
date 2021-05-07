@@ -83,6 +83,10 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 	return c, nil
 }
 
+func (c *ChartRepo) Close() {
+	c.CancelChan <- 1
+}
+
 func (c *ChartRepo) StartTimerJobs(callbackFunc func(chart *utils.CommonChartVersion, err error)) {
 	timeTicker := time.NewTicker(time.Duration(c.Period) * time.Second)
 	defer timeTicker.Stop()

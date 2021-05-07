@@ -21,9 +21,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/shijunLee/helmops/pkg/helm/utils"
-
 	"github.com/shijunLee/helmops/pkg/charts"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 
 	"helm.sh/helm/v3/pkg/storage/driver"
 
@@ -59,7 +58,9 @@ type HelmOperationReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
+
+//TODO add revision support
+
 // the HelmOperation object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
@@ -237,6 +238,24 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 func (r *HelmOperationReconciler) removeFinalizer(ctx context.Context, operation *helmopsv1alpha1.HelmOperation) error {
+	if operation.Spec.Uninstall.DoNotDeleteRelease {
+		return nil
+	}
+	uninstallConfig := operation.Spec.Uninstall
+	uninstall := actions.UninstallOptions{
+		Description:       uninstallConfig.Description,
+		KeepHistory:       uninstallConfig.KeepHistory,
+		Timeout:           uninstallConfig.Timeout,
+		DisableHooks:      uninstallConfig.DisableHooks,
+		Namespace:         operation.Namespace,
+		ReleaseName:       operation.Name,
+		KubernetesOptions: actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+	}
+	_, err := uninstall.Run()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
