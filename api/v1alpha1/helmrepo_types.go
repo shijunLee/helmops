@@ -36,8 +36,6 @@ type HelmRepoSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	//RepoName Chart repo name
-	RepoName string `json:"repoName,omitempty"`
 	//RepoType Chart repo type support git or chart museum
 	RepoType RepoType `json:"repoType,omitempty"`
 

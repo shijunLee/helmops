@@ -112,9 +112,6 @@ var _ = BeforeSuite(func() {
 	err = (&HelmOperation{}).SetupWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&HelmOperationControllerReversion{}).SetupWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
 	//+kubebuilder:scaffold:webhook
 
 	go func() {

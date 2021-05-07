@@ -34,17 +34,4 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: shijunlee.net
-  group: helmops
-  kind: HelmOperationControllerReversion
-  path: github.com/shijunLee/helmops/api/v1alpha1
-  version: v1alpha1
-  webhooks:
-    defaulting: true
-    validation: true
-    webhookVersion: v1
 version: "3"

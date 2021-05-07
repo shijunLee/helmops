@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+	"strings"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -41,8 +44,9 @@ var _ webhook.Defaulter = &HelmRepo{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *HelmRepo) Default() {
 	helmrepolog.Info("default", "name", r.Name)
-
-	// TODO(user): fill in your defaulting logic.
+	if r.Spec.GitBranch == "" {
+		r.Spec.GitBranch = "master"
+	}
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -54,7 +58,16 @@ var _ webhook.Validator = &HelmRepo{}
 func (r *HelmRepo) ValidateCreate() error {
 	helmrepolog.Info("validate create", "name", r.Name)
 
-	// TODO(user): fill in your validation logic upon object creation.
+	return r.commonValidate()
+}
+
+func (r *HelmRepo) commonValidate() error {
+	if !(strings.HasPrefix(strings.ToLower(r.Spec.RepoURL), "http") || strings.HasPrefix(strings.ToLower(r.Spec.RepoURL), "git@")) {
+		return errors.New("repo url not support")
+	}
+	if r.Spec.RepoType != RepoTypeGit && r.Spec.RepoType != RepoTypeChartMuseum {
+		return errors.New("repo type only support Git or ChartMuseum")
+	}
 	return nil
 }
 
@@ -62,8 +75,7 @@ func (r *HelmRepo) ValidateCreate() error {
 func (r *HelmRepo) ValidateUpdate(old runtime.Object) error {
 	helmrepolog.Info("validate update", "name", r.Name)
 
-	// TODO(user): fill in your validation logic upon object update.
-	return nil
+	return r.commonValidate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type

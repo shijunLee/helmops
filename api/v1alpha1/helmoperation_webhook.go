@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -53,7 +54,9 @@ var _ webhook.Validator = &HelmOperation{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *HelmOperation) ValidateCreate() error {
 	helmoperationlog.Info("validate create", "name", r.Name)
-
+	if r.Spec.ChartVersion == "" || r.Spec.ChartName == "" {
+		return errors.New("chart name or chart version can not empty")
+	}
 	// TODO(user): fill in your validation logic upon object creation.
 	return nil
 }
@@ -61,7 +64,13 @@ func (r *HelmOperation) ValidateCreate() error {
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *HelmOperation) ValidateUpdate(old runtime.Object) error {
 	helmoperationlog.Info("validate update", "name", r.Name)
-
+	oldOperation, ok := old.(*HelmOperation)
+	if !ok {
+		return nil
+	}
+	if r.Spec.ChartName != oldOperation.Spec.ChartName || r.Spec.ChartRepoName != oldOperation.Spec.ChartRepoName {
+		return errors.New("chart name or chart repo can not change for update")
+	}
 	// TODO(user): fill in your validation logic upon object update.
 	return nil
 }
