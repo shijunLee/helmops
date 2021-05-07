@@ -50,11 +50,12 @@ func DownloadChartArchive(chartUrl, username, password string, caPath, certPath,
 
 //CommonChartVersion common chart info,notice this code will be rebuild
 type CommonChartVersion struct {
-	Name    string
-	Version string
-	URL     string
-	URLType string
-	Digest  string
+	Name     string
+	Version  string
+	URL      string
+	URLType  string
+	Digest   string
+	RepoName string
 }
 
 // CommonChartVersions is a list of versioned chart references.

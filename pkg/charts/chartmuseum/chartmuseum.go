@@ -114,10 +114,10 @@ func (c *ChartMuseum) ListCharts() (map[string]utils.CommonChartVersions, error)
 		for _, item := range versions {
 			commonCharts, ok := result[key]
 			if ok {
-				commonCharts = append(commonCharts, utils.CommonChartVersion{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0]})
+				commonCharts = append(commonCharts, utils.CommonChartVersion{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0], RepoName: c.RepoName})
 				result[key] = commonCharts
 			} else {
-				result[key] = utils.CommonChartVersions{{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0], Digest: item.Digest}}
+				result[key] = utils.CommonChartVersions{{Name: key, Version: item.Version, URLType: "http", URL: item.URLs[0], Digest: item.Digest, RepoName: c.RepoName}}
 			}
 		}
 	}

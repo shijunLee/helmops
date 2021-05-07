@@ -264,10 +264,10 @@ func (g *Repo) ListCharts() (map[string]utils.CommonChartVersions, error) {
 				if ok {
 					lock.Lock()
 					defer lock.Unlock()
-					versions = append(versions, utils.CommonChartVersion{Name: chartName, Version: version, URLType: "file", URL: path})
+					versions = append(versions, utils.CommonChartVersion{Name: chartName, Version: version, URLType: "file", URL: path, RepoName: g.RepoName})
 					result[chartName] = versions
 				} else {
-					result[chartName] = utils.CommonChartVersions{{Name: chartName, Version: version, URLType: "file", URL: path}}
+					result[chartName] = utils.CommonChartVersions{{Name: chartName, Version: version, URLType: "file", URL: path, RepoName: g.RepoName}}
 				}
 			}
 		}
