@@ -5,6 +5,8 @@ import (
 	"context"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -142,7 +144,19 @@ func updateCRDs(crds []chart.CRD, cfg *helmactions.Configuration) error {
 					cfg.Log("object not custom resource definition %s %s", item.Name, item.Namespace)
 					continue
 				}
-				_, err := apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().
+				_, err := apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.Background(), obj.Name, metav1.GetOptions{})
+				if err != nil {
+					if k8serrors.IsNotFound(err) {
+						_, err = apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(),
+							obj, metav1.CreateOptions{})
+						if err != nil {
+							return err
+						}
+						continue
+					}
+					return err
+				}
+				_, err = apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().
 					Update(context.Background(), obj, metav1.UpdateOptions{})
 				if err != nil {
 					return err
@@ -153,7 +167,20 @@ func updateCRDs(crds []chart.CRD, cfg *helmactions.Configuration) error {
 					cfg.Log("object not custom resource definition %s %s", item.Name, item.Namespace)
 					continue
 				}
-				_, err := apiExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().
+				_, err := apiExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(context.Background(),
+					obj.Name, metav1.GetOptions{})
+				if err != nil {
+					if k8serrors.IsNotFound(err) {
+						_, err = apiExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.Background(),
+							obj, metav1.CreateOptions{})
+						if err != nil {
+							return err
+						}
+						continue
+					}
+					return err
+				}
+				_, err = apiExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().
 					Update(context.Background(), obj, metav1.UpdateOptions{})
 				if err != nil {
 					return err

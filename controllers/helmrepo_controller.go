@@ -42,11 +42,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 )
 
 const (
@@ -174,6 +174,9 @@ func (r *HelmRepoReconciler) DoRepoSyncReconcile(ctx context.Context, req syncUp
 	helmOperation := &helmopsv1alpha1.HelmOperation{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.ReleaseName, Namespace: req.Namespace}, helmOperation)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
 		r.Log.Error(err, "find helm operation resource from client error", "ResourceName", req.ReleaseName, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
@@ -274,6 +277,7 @@ func (r *HelmRepoReconciler) DoRepoSyncReconcile(ctx context.Context, req syncUp
 			WaitForJobs:              updateConfig.WaitForJobs,
 			ChartOpts:                &chart,
 			KubernetesOptions:        actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+			UpgradeCRDs:              updateConfig.UpgradeCRDs,
 		}
 		release, err = updateOption.Run()
 		if err != nil {
@@ -311,6 +315,9 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	helmRepo := &helmopsv1alpha1.HelmRepo{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, helmRepo)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "find repo resource from client error", "ResourceName", req.Name)
 		return ctrl.Result{}, err
 	}

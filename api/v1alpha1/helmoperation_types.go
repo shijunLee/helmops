@@ -101,6 +101,9 @@ type Upgrade struct {
 	DisableOpenAPIValidation bool `json:"disableOpenAPIValidation,omitempty"`
 	//WaitForJobs wait for jobs exec success
 	WaitForJobs bool `json:"waitForJobs,omitempty"`
+
+	// is upgrade CRD when upgrade the helm release
+	UpgradeCRDs bool `json:"UpgradeCRDs,omitempty"`
 }
 
 //Create the helm chart create options

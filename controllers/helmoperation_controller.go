@@ -21,14 +21,15 @@ import (
 	"reflect"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/shijunLee/helmops/pkg/charts"
 	"github.com/shijunLee/helmops/pkg/helm/utils"
 
 	"helm.sh/helm/v3/pkg/storage/driver"
 
-	"k8s.io/client-go/rest"
-
 	"github.com/shijunLee/helmops/pkg/helm/actions"
+	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -70,6 +71,9 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	helmOperation := &helmopsv1alpha1.HelmOperation{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, helmOperation)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "find helm operation resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
@@ -215,6 +219,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				WaitForJobs:              updateConfig.WaitForJobs,
 				ChartOpts:                &chart,
 				KubernetesOptions:        actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+				UpgradeCRDs:              updateConfig.UpgradeCRDs,
 			}
 			release, err = updateOption.Run()
 			if err != nil {
