@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -52,7 +53,15 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var period int
+	var localCachePath string
+	var maxConcurrentReconciles int
+	var jitterPeriod int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.IntVar(&period, "repo-period", 30, "the period for helm repo sync")
+	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-sync-reconciles", 1, "the max concurrent sync reconciles")
+	flag.IntVar(&jitterPeriod, "jitter-period", 0, "the jitter period for helm release update process")
+	flag.StringVar(&localCachePath, "local-cache-path", "/tmp", "the git cache local path for helm repo.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
@@ -77,35 +86,21 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	if err = (&controllers.HelmRepoReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HelmRepo"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	var helmRepoReconciler = controllers.NewHelmRepoReconciler(mgr, period, maxConcurrentReconciles, time.Duration(jitterPeriod), localCachePath)
+	if err = helmRepoReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmRepo")
 		os.Exit(1)
 	}
 	if err = (&controllers.HelmOperationReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HelmOperation"),
-		Scheme: mgr.GetScheme(),
+		Client:     mgr.GetClient(),
+		Log:        ctrl.Log.WithName("controllers").WithName("HelmOperation"),
+		Scheme:     mgr.GetScheme(),
+		RestConfig: mgr.GetConfig(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmOperation")
 		os.Exit(1)
 	}
-	if err = (&controllers.HelmOperationControllerReversionReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HelmOperationControllerReversion"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HelmOperationControllerReversion")
-		os.Exit(1)
-	}
-	if err = (&helmopsv1alpha1.HelmOperationControllerReversion{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperationControllerReversion")
-		os.Exit(1)
-	}
+
 	if err = (&helmopsv1alpha1.HelmOperation{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperation")
 		os.Exit(1)
@@ -122,10 +117,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperation")
 		os.Exit(1)
 	}
-	if err = (&helmopsv1alpha1.HelmOperationControllerReversion{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperationControllerReversion")
-		os.Exit(1)
-	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -84,7 +84,7 @@ func NewHelmRepoReconciler(mgr ctrl.Manager, period, maxConcurrentReconciles int
 	}
 	result := &HelmRepoReconciler{
 		Client:                  mgr.GetClient(),
-		Log:                     mgr.GetLogger(),
+		Log:                     mgr.GetLogger().WithName("controllers").WithName("HelmRepo"),
 		Scheme:                  mgr.GetScheme(),
 		Period:                  period,
 		RestConfig:              mgr.GetConfig(),
