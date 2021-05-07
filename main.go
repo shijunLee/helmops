@@ -94,6 +94,38 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmOperation")
 		os.Exit(1)
 	}
+	if err = (&controllers.HelmOperationControllerReversionReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("HelmOperationControllerReversion"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HelmOperationControllerReversion")
+		os.Exit(1)
+	}
+	if err = (&helmopsv1alpha1.HelmOperationControllerReversion{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperationControllerReversion")
+		os.Exit(1)
+	}
+	if err = (&helmopsv1alpha1.HelmOperation{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperation")
+		os.Exit(1)
+	}
+	if err = (&helmopsv1alpha1.HelmRepo{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "HelmRepo")
+		os.Exit(1)
+	}
+	if err = (&helmopsv1alpha1.HelmRepo{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "HelmRepo")
+		os.Exit(1)
+	}
+	if err = (&helmopsv1alpha1.HelmOperation{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperation")
+		os.Exit(1)
+	}
+	if err = (&helmopsv1alpha1.HelmOperationControllerReversion{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperationControllerReversion")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -1,0 +1,24 @@
+# permissions for end users to edit helmoperationcontrollerreversions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: helmoperationcontrollerreversion-editor-role
+rules:
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmoperationcontrollerreversions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmoperationcontrollerreversions/status
+  verbs:
+  - get
