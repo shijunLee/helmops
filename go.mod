@@ -3,6 +3,7 @@ module github.com/shijunLee/helmops
 go 1.15
 
 require (
+	cuelang.org/go v0.4.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
