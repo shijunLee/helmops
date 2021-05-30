@@ -3,4 +3,6 @@ resources:
 - helmops_v1alpha1_helmrepo.yaml
 - helmops_v1alpha1_helmoperation.yaml
 - helmops_v1alpha1_helmoperationcontrollerreversion.yaml
+- helmops_v1alpha1_helmapplication.yaml
+- helmops_v1alpha1_helmcomponent.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

@@ -2,13 +2,17 @@ package actions
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"github.com/gofrs/flock"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/yaml"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
@@ -178,6 +182,105 @@ func (c *ChartOpts) LoadChart() (*chart.Chart, error) {
 	return nil, errors.New("load chart error ,chart load method not config")
 }
 
+type repoAddOptions struct {
+	name                 string
+	url                  string
+	username             string
+	password             string
+	forceUpdate          bool
+	allowDeprecatedRepos bool
+
+	certFile              string
+	keyFile               string
+	caFile                string
+	insecureSkipTLSverify bool
+
+	repoFile  string
+	repoCache string
+
+	// Deprecated, but cannot be removed until Helm 4
+	deprecatedNoUpdate bool
+}
+
+
+func (r *RepoOptions) AddChartRepoToLocal() error  {
+	var settings = cli.New()
+	o := &repoAddOptions{}
+	o.name = r.RepoName
+	o.url = r.RepoURL
+	o.repoFile = settings.RepositoryConfig
+	o.repoCache = settings.RepositoryCache
+	o.username = r.Username
+	o.password = r.Password
+	o.caFile = r.CAFile
+	o.certFile = r.CertFile
+	o.keyFile = r.KeyFile
+	// Ensure the file directory exists as it is required for file locking
+	err := os.MkdirAll(filepath.Dir(o.repoFile), os.ModePerm)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	// Acquire a file lock for process synchronization
+	fileLock := flock.New(strings.Replace(o.repoFile, filepath.Ext(o.repoFile), ".lock", 1))
+	lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	locked, err := fileLock.TryLockContext(lockCtx, time.Second)
+	if err == nil && locked {
+		defer fileLock.Unlock()
+	}
+	if err != nil {
+		return err
+	}
+
+	b, err := ioutil.ReadFile(o.repoFile)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	var f repo.File
+	if err := yaml.Unmarshal(b, &f); err != nil {
+		return err
+	}
+
+	c := repo.Entry{
+		Name:                  o.name,
+		URL:                   o.url,
+		Username:              o.username,
+		Password:              o.password,
+		CertFile:              o.certFile,
+		KeyFile:               o.keyFile,
+		CAFile:                o.caFile,
+		InsecureSkipTLSverify: o.insecureSkipTLSverify,
+	}
+
+	// If the repo exists do one of two things:
+	// 1. If the configuration for the name is the same continue without error
+	// 2. When the config is different require --force-update
+	if !o.forceUpdate && f.Has(o.name) {
+		return nil
+	}
+
+	cr, err  := repo.NewChartRepository(&c, getter.All(settings))
+	if err != nil {
+		return err
+	}
+
+	if o.repoCache != "" {
+		cr.CachePath = o.repoCache
+	}
+	if _, err :=cr.DownloadIndexFile(); err != nil {
+		return errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", o.url)
+	}
+
+	f.Update(&c)
+
+	if err := f.WriteFile(o.repoFile, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *RepoOptions) GetLatestRepoIndex() (*repo.IndexFile, error) {
 	repoIndexURL := fmt.Sprintf("%s/index.yaml", r.RepoURL)
 	var indexFile = &IndexFile{
@@ -204,6 +307,7 @@ type IndexFile struct {
 	*repo.IndexFile
 	ServerInfo *ServerInfo `json:"serverInfo"`
 }
+
 
 // FindChartInAuthAndTLSRepoURL finds chart in chart repository pointed by repoURL
 // without adding repo to repositories, like FindChartInRepoURL,

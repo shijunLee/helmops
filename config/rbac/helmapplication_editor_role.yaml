@@ -1,0 +1,24 @@
+# permissions for end users to edit helmapplications.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: helmapplication-editor-role
+rules:
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmapplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmapplications/status
+  verbs:
+  - get

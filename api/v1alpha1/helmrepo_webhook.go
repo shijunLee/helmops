@@ -18,12 +18,11 @@ package v1alpha1
 
 import (
 	"errors"
-	"strings"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"strings"
 )
 
 // log is for logging in this package.
@@ -47,6 +46,7 @@ func (r *HelmRepo) Default() {
 	if r.Spec.GitBranch == "" {
 		r.Spec.GitBranch = "master"
 	}
+
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.

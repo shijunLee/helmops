@@ -1,0 +1,7 @@
+apiVersion: helmops.shijunlee.net/v1alpha1
+kind: HelmComponent
+metadata:
+  name: helmcomponent-sample
+spec:
+  # Add fields here
+  foo: bar
