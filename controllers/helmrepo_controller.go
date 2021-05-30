@@ -23,30 +23,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shijunLee/helmops/pkg/helm/actions"
-	"helm.sh/helm/v3/pkg/storage/driver"
-	"k8s.io/client-go/rest"
-
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"k8s.io/client-go/util/workqueue"
-
-	"github.com/shijunLee/helmops/pkg/helm/utils"
-
-	"github.com/shijunLee/helmops/pkg/charts"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/go-logr/logr"
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"github.com/shijunLee/helmops/pkg/charts"
+	"github.com/shijunLee/helmops/pkg/helm/actions"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 const (
@@ -343,6 +336,7 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		log.Error(err, "create repo error", "ResourceName", req.Name)
 		return ctrl.Result{RequeueAfter: time.Second * 5}, err
 	}
+
 	repo.StartTimerJobs(r.repoCallBack)
 	repoCache.Store(helmRepo.Name, repo)
 

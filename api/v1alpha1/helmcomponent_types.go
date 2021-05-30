@@ -28,14 +28,54 @@ type HelmComponentSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of HelmComponent. Edit helmcomponent_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//Values the helm install values , if values update while update the helm release
+	ValuesTemplate ComponentTemplate `json:"valuesTemplate,omitempty"`
+	//AutoUpdate is auto update for release
+	AutoUpdate bool `json:"autoUpdate,omitempty"`
+
+	//ChartRepoName the helmops repo name
+	ChartRepoName string `json:"chartRepoName,omitempty"`
+	//ChartVersion the version for the chart will install
+	ChartVersion string `json:"chartVersion,omitempty"`
+	//ChartName the chart name which will install
+	ChartName string `json:"chartName,omitempty"`
+	// Create the chart create options
+	Create Create `json:"create,omitempty"`
+
+	//Upgrade the chart upgrade options
+	Upgrade Upgrade `json:"upgrade,omitempty"`
+
+	//Uninstall the chart uninstall options
+	Uninstall Uninstall `json:"uninstall,omitempty"`
+
+	// to get the helm release is running , if not set will not wait for this job
+	StableStatus *StableStatus `json:"stableStatus,omitempty"`
+
+	// the component return value for  next helm component
+	ReturnValues []ReturnValue `json:"ReturnValues,omitempty"`
 }
 
 // HelmComponentStatus defines the observed state of HelmComponent
 type HelmComponentStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+}
+
+//ComponentTemplate the component Value template
+type ComponentTemplate struct {
+	CUE  *CUETemplate    `json:"cue,omitempty"`
+	YAML *GoYAMLTemplate `json:"yaml,omitempty"`
+}
+
+//CUETemplate the cue template for helm values in helm template
+type CUETemplate struct {
+	Template string `json:"template,omitempty"`
+}
+
+// GoYAMLTemplate go yaml template for helm template
+type GoYAMLTemplate struct {
+	Template *CreateParam `json:"template,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -57,6 +97,24 @@ type HelmComponentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []HelmComponent `json:"items"`
+}
+
+// StableStatus this is to get helm component stable status
+type StableStatus struct {
+	APIGroup string `json:"apiGroup,omitempty"`
+	Version  string `json:"version,omitempty"`
+	Resource string `json:"resource,omitempty"`
+	JSONPath string `json:"jsonPath,omitempty"`
+	Value    string `json:"value,omitempty"`
+}
+
+type ReturnValue struct {
+	Name          string   `json:"name"`
+	APIGroup      string   `json:"apiGroup,omitempty"`
+	Version       string   `json:"version,omitempty"`
+	Resource      string   `json:"resource,omitempty"`
+	JSONPaths     []string `json:"jsonPaths,omitempty"`
+	ValueTemplate string   `json:"valueTemplate,omitempty"`
 }
 
 func init() {

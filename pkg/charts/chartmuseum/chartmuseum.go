@@ -1,10 +1,13 @@
 package chartmuseum
 
 import (
+	"sync"
+
 	"github.com/pkg/errors"
+	"helm.sh/helm/v3/pkg/repo"
+
 	"github.com/shijunLee/helmops/pkg/helm/actions"
 	"github.com/shijunLee/helmops/pkg/helm/utils"
-	"helm.sh/helm/v3/pkg/repo"
 )
 
 var (
@@ -18,6 +21,7 @@ type ChartMuseum struct {
 	Password        string
 	RepoName        string
 	InsecureSkipTLS bool
+	repoOptions     *actions.RepoOptions
 }
 
 func NewChartMuseum(url, username, password, repoName string, insecureSkipTLS bool) (*ChartMuseum, error) {
@@ -28,22 +32,32 @@ func NewChartMuseum(url, username, password, repoName string, insecureSkipTLS bo
 		RepoName:        repoName,
 		InsecureSkipTLS: insecureSkipTLS,
 	}
-	_, err := c.loadIndex()
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
-func (c *ChartMuseum) loadIndex() (map[string]repo.ChartVersions, error) {
-	repoOptions := actions.RepoOptions{
+	repoOptions := &actions.RepoOptions{
 		RepoURL:               c.URL,
 		Username:              c.Username,
 		Password:              c.Password,
 		InsecureSkipTLSVerify: c.InsecureSkipTLS,
 		RepoName:              c.RepoName,
 	}
-	repoIndex, err := repoOptions.GetLatestRepoIndex()
+	c.repoOptions = repoOptions
+	err := c.addLocalRepo()
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.loadIndex()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *ChartMuseum) addLocalRepo() error {
+	return c.repoOptions.AddChartRepoToLocal()
+}
+
+func (c *ChartMuseum) loadIndex() (map[string]repo.ChartVersions, error) {
+
+	repoIndex, err := c.repoOptions.GetLatestRepoIndex()
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +103,16 @@ func (c *ChartMuseum) CheckChartExist(chartName, version string) bool {
 }
 
 func (c *ChartMuseum) getChartVersions(chartName string) ([]string, error) {
+	// if update fail not process
+	//TODO: log for helm local cache update fail
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = c.repoOptions.UpdateRepoLocalCache()
+	}()
 	chartVersions, err := c.loadIndex()
+
 	if err != nil {
 		return nil, err
 	}
@@ -101,10 +124,20 @@ func (c *ChartMuseum) getChartVersions(chartName string) ([]string, error) {
 	for _, item := range versions {
 		vers = append(vers, item.Version)
 	}
+	wg.Wait()
 	return vers, nil
 }
 
 func (c *ChartMuseum) ListCharts() (map[string]utils.CommonChartVersions, error) {
+	// if update fail not process
+	//TODO: log for helm local cache update fail
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = c.repoOptions.UpdateRepoLocalCache()
+	}()
+
 	index, err := c.loadIndex()
 	if err != nil {
 		return nil, err
@@ -121,5 +154,6 @@ func (c *ChartMuseum) ListCharts() (map[string]utils.CommonChartVersions, error)
 			}
 		}
 	}
+	wg.Wait()
 	return result, nil
 }

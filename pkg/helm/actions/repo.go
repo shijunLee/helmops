@@ -6,20 +6,21 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/gofrs/flock"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/yaml"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
+	"sigs.k8s.io/yaml"
 
 	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
@@ -182,6 +183,8 @@ func (c *ChartOpts) LoadChart() (*chart.Chart, error) {
 	return nil, errors.New("load chart error ,chart load method not config")
 }
 
+var errNoRepositories = errors.New("no repositories found. You must add one before updating")
+
 type repoAddOptions struct {
 	name                 string
 	url                  string
@@ -190,6 +193,7 @@ type repoAddOptions struct {
 	forceUpdate          bool
 	allowDeprecatedRepos bool
 
+	// TODO: this cert file not impl
 	certFile              string
 	keyFile               string
 	caFile                string
@@ -202,8 +206,77 @@ type repoAddOptions struct {
 	deprecatedNoUpdate bool
 }
 
+type repoUpdateOptions struct {
+	update    func([]*repo.ChartRepository) []error
+	repoFile  string
+	repoCache string
+}
 
-func (r *RepoOptions) AddChartRepoToLocal() error  {
+func UpdateChartRepoToLocal(repoName string) error {
+	var settings = cli.New()
+	o := &repoUpdateOptions{update: updateCharts}
+	f, err := repo.LoadFile(o.repoFile)
+	switch {
+	case os.IsNotExist(errors.Cause(err)):
+		return errNoRepositories
+	case err != nil:
+		return errors.Wrapf(err, "failed loading file: %s", o.repoFile)
+	case len(f.Repositories) == 0:
+		return errNoRepositories
+	}
+
+	var repos []*repo.ChartRepository
+	for _, cfg := range f.Repositories {
+		if repoName != "" && cfg.Name != repoName {
+			continue
+		}
+		r, err := repo.NewChartRepository(cfg, getter.All(settings))
+		if err != nil {
+			return err
+		}
+		if o.repoCache != "" {
+			r.CachePath = o.repoCache
+		}
+		repos = append(repos, r)
+		// while update only one repo stop the loop wile add current repo info
+		if repoName != "" && cfg.Name == repoName {
+			break
+		}
+	}
+
+	errs := o.update(repos)
+
+	if len(errs) > 0 {
+		var err error = errors.New("update chart repo return error,")
+		for _, item := range errs {
+			err = errors.Wrap(err, fmt.Sprintf("%s,\n", item.Error()))
+		}
+		return err
+	}
+	return nil
+}
+
+func updateCharts(repos []*repo.ChartRepository) []error {
+	var errorResponses []error
+	var wg sync.WaitGroup
+	for _, re := range repos {
+		wg.Add(1)
+		go func(re *repo.ChartRepository) {
+			defer wg.Done()
+			if _, err := re.DownloadIndexFile(); err != nil {
+				err = errors.Wrap(err, fmt.Sprintf("repo %s download index file error", re.Config.Name))
+				errorResponses = append(errorResponses, err)
+			}
+		}(re)
+	}
+	wg.Wait()
+	return errorResponses
+}
+func (r *RepoOptions) UpdateRepoLocalCache() error {
+	return UpdateChartRepoToLocal(r.RepoName)
+}
+
+func (r *RepoOptions) ChartRepoToLocal(isForceUpdate bool) error {
 	var settings = cli.New()
 	o := &repoAddOptions{}
 	o.name = r.RepoName
@@ -215,6 +288,7 @@ func (r *RepoOptions) AddChartRepoToLocal() error  {
 	o.caFile = r.CAFile
 	o.certFile = r.CertFile
 	o.keyFile = r.KeyFile
+	o.forceUpdate = isForceUpdate
 	// Ensure the file directory exists as it is required for file locking
 	err := os.MkdirAll(filepath.Dir(o.repoFile), os.ModePerm)
 	if err != nil && !os.IsExist(err) {
@@ -261,7 +335,7 @@ func (r *RepoOptions) AddChartRepoToLocal() error  {
 		return nil
 	}
 
-	cr, err  := repo.NewChartRepository(&c, getter.All(settings))
+	cr, err := repo.NewChartRepository(&c, getter.All(settings))
 	if err != nil {
 		return err
 	}
@@ -269,7 +343,7 @@ func (r *RepoOptions) AddChartRepoToLocal() error  {
 	if o.repoCache != "" {
 		cr.CachePath = o.repoCache
 	}
-	if _, err :=cr.DownloadIndexFile(); err != nil {
+	if _, err := cr.DownloadIndexFile(); err != nil {
 		return errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", o.url)
 	}
 
@@ -279,6 +353,10 @@ func (r *RepoOptions) AddChartRepoToLocal() error  {
 		return err
 	}
 	return nil
+}
+
+func (r *RepoOptions) AddChartRepoToLocal() error {
+	return r.ChartRepoToLocal(false)
 }
 
 func (r *RepoOptions) GetLatestRepoIndex() (*repo.IndexFile, error) {
@@ -307,7 +385,6 @@ type IndexFile struct {
 	*repo.IndexFile
 	ServerInfo *ServerInfo `json:"serverInfo"`
 }
-
 
 // FindChartInAuthAndTLSRepoURL finds chart in chart repository pointed by repoURL
 // without adding repo to repositories, like FindChartInRepoURL,

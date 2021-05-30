@@ -4,11 +4,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/shijunLee/helmops/pkg/helm/utils"
-
 	"github.com/pkg/errors"
+
 	"github.com/shijunLee/helmops/pkg/charts/chartmuseum"
 	git "github.com/shijunLee/helmops/pkg/charts/git"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 var (
@@ -62,6 +62,7 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 		operation, err = git.NewRepo(url, username, password, token, branch, localCache, name, insecureSkipTLS)
 	case repoTypeChartMuseum:
 		operation, err = chartmuseum.NewChartMuseum(url, username, password, name, insecureSkipTLS)
+
 	}
 	if err != nil {
 		return nil, err

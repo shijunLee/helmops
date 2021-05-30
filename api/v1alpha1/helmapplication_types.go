@@ -28,14 +28,44 @@ type HelmApplicationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of HelmApplication. Edit helmapplication_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// the install steps install
+	Steps []ComponentStep `json:"steps"`
 }
 
 // HelmApplicationStatus defines the observed state of HelmApplication
 type HelmApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+}
+
+// ComponentStep the step which will install
+type ComponentStep struct {
+	// the component will install
+	ComponentName string `json:"componentName,omitempty"`
+	// the component install params
+	Parameters []ComponentParameter `json:"parameters,omitempty"`
+}
+
+// ComponentParameter the component install param ,notice not both set value and ref ,if set will use value as default
+type ComponentParameter struct {
+	// the parameter name
+	Name string `json:"name,omitempty"`
+
+	// the value for parameter ,notice not both set value and ref ,if set will use value as default
+	Value string `json:"value,omitempty"`
+
+	// the value type for parameter , will try to convert value to the set type not set will use default string
+	Type string `json:"type,omitempty"`
+	// ref parameter from other helm component
+	Ref *RefParameter `json:"ref,omitempty"`
+}
+
+// RefParameter the parameter from the other component
+type RefParameter struct {
+	// the helm component Name
+	ComponentName string `json:"componentName,omitempty"`
+	// the helm component return date name define
+	ReturnDateName string `json:"returnDateName,omitempty"`
 }
 
 //+kubebuilder:object:root=true
