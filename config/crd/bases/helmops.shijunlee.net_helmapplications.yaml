@@ -1,0 +1,96 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: helmapplications.helmops.shijunlee.net
+spec:
+  group: helmops.shijunlee.net
+  names:
+    kind: HelmApplication
+    listKind: HelmApplicationList
+    plural: helmapplications
+    singular: helmapplication
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: HelmApplication is the Schema for the helmapplications API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HelmApplicationSpec defines the desired state of HelmApplication
+            properties:
+              steps:
+                description: the install steps install
+                items:
+                  description: ComponentStep the step which will install
+                  properties:
+                    componentName:
+                      description: the component will install
+                      type: string
+                    parameters:
+                      description: the component install params
+                      items:
+                        description: ComponentParameter the component install param
+                          ,notice not both set value and ref ,if set will use value
+                          as default
+                        properties:
+                          name:
+                            description: the parameter name
+                            type: string
+                          ref:
+                            description: ref parameter from other helm component
+                            properties:
+                              componentName:
+                                description: the helm component Name
+                                type: string
+                              returnDateName:
+                                description: the helm component return date name define
+                                type: string
+                            type: object
+                          type:
+                            description: the value type for parameter , will try to
+                              convert value to the set type not set will use default
+                              string
+                            type: string
+                          value:
+                            description: the value for parameter ,notice not both
+                              set value and ref ,if set will use value as default
+                            type: string
+                        type: object
+                      type: array
+                  type: object
+                type: array
+            required:
+            - steps
+            type: object
+          status:
+            description: HelmApplicationStatus defines the observed state of HelmApplication
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

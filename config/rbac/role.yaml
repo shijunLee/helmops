@@ -9,6 +9,58 @@ rules:
 - apiGroups:
   - helmops.shijunlee.net
   resources:
+  - helmapplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmapplications/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmapplications/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmcomponents
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmcomponents/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
+  - helmcomponents/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - helmops.shijunlee.net
+  resources:
   - helmoperations
   verbs:
   - create

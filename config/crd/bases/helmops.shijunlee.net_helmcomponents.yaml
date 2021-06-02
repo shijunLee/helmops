@@ -1,0 +1,327 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: helmcomponents.helmops.shijunlee.net
+spec:
+  group: helmops.shijunlee.net
+  names:
+    kind: HelmComponent
+    listKind: HelmComponentList
+    plural: helmcomponents
+    singular: helmcomponent
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: HelmComponent is the Schema for the helmcomponents API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HelmComponentSpec defines the desired state of HelmComponent
+            properties:
+              ReturnValues:
+                description: the component return value for  next helm component
+                items:
+                  properties:
+                    apiGroup:
+                      type: string
+                    jsonPaths:
+                      items:
+                        type: string
+                      type: array
+                    name:
+                      type: string
+                    resource:
+                      type: string
+                    valueTemplate:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              autoUpdate:
+                description: AutoUpdate is auto update for release
+                type: boolean
+              chartName:
+                description: ChartName the chart name which will install
+                type: string
+              chartRepoName:
+                description: ChartRepoName the helmops repo name
+                type: string
+              chartVersion:
+                description: ChartVersion the version for the chart will install
+                type: string
+              create:
+                description: Create the chart create options
+                properties:
+                  createNamespace:
+                    description: CreateNamespace create namespace when install
+                    type: boolean
+                  description:
+                    description: Description install custom description
+                    type: string
+                  disableOpenAPIValidation:
+                    description: DisableOpenAPIValidation disable openapi validation
+                      on kubernetes install
+                    type: boolean
+                  generateName:
+                    description: GenerateName auto generate name for a release
+                    type: boolean
+                  isUpgrade:
+                    description: IsUpgrade is upgrade dependence charts
+                    type: boolean
+                  noHook:
+                    description: NoHook do not use hook
+                    type: boolean
+                  replace:
+                    description: Replace  while resource exist do replace operation
+                    type: boolean
+                  skipCRDs:
+                    description: SkipCRDs is skip crd when install
+                    type: boolean
+                  timeout:
+                    description: Timeout is the timeout for this operation
+                    format: int64
+                    type: integer
+                  wait:
+                    description: Wait wait  runtime.Object is running
+                    type: boolean
+                  waitForJobs:
+                    description: WaitForJobs wait job exec success
+                    type: boolean
+                type: object
+              operator:
+                description: if this component is an operator , will get the operator
+                  is need install
+                properties:
+                  apiGroup:
+                    description: the operator api groups
+                    type: string
+                  apiKind:
+                    description: the operator api kinds
+                    type: string
+                  matchLabels:
+                    description: match labels for the operator runtime object notice
+                      MatchLabels or MetaName only support one
+                    properties:
+                      matchExpressions:
+                        description: matchExpressions is a list of label selector
+                          requirements. The requirements are ANDed.
+                        items:
+                          description: A label selector requirement is a selector
+                            that contains values, a key, and an operator that relates
+                            the key and values.
+                          properties:
+                            key:
+                              description: key is the label key that the selector
+                                applies to.
+                              type: string
+                            operator:
+                              description: operator represents a key's relationship
+                                to a set of values. Valid operators are In, NotIn,
+                                Exists and DoesNotExist.
+                              type: string
+                            values:
+                              description: values is an array of string values. If
+                                the operator is In or NotIn, the values array must
+                                be non-empty. If the operator is Exists or DoesNotExist,
+                                the values array must be empty. This array is replaced
+                                during a strategic merge patch.
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - key
+                          - operator
+                          type: object
+                        type: array
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: matchLabels is a map of {key,value} pairs. A
+                          single {key,value} in the matchLabels map is equivalent
+                          to an element of matchExpressions, whose key field is "key",
+                          the operator is "In", and the values array contains only
+                          "value". The requirements are ANDed.
+                        type: object
+                    type: object
+                  metaName:
+                    description: the meta name of the operator runtime object
+                    type: string
+                  version:
+                    description: the operator api group versions
+                    type: string
+                  watchType:
+                    description: 'the operator watch types default : NAMESPACE or
+                      CLUSTER'
+                    type: string
+                required:
+                - apiGroup
+                - apiKind
+                - version
+                - watchType
+                type: object
+              stableStatus:
+                description: to get the helm release is running , if not set will
+                  not wait for this job
+                properties:
+                  apiGroup:
+                    type: string
+                  jsonPath:
+                    type: string
+                  resource:
+                    type: string
+                  value:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              uninstall:
+                description: Uninstall the chart uninstall options
+                properties:
+                  description:
+                    description: Description install custom description
+                    type: string
+                  disableHooks:
+                    description: DisableHooks disables hook processing if set to true.
+                    type: boolean
+                  doNotDeleteRelease:
+                    description: do not delete helm release if helm operation is delete
+                    type: boolean
+                  keepHistory:
+                    description: KeepHistory keep chart install history
+                    type: boolean
+                  timeout:
+                    description: TimeOut time out time
+                    format: int64
+                    type: integer
+                type: object
+              upgrade:
+                description: Upgrade the chart upgrade options
+                properties:
+                  UpgradeCRDs:
+                    description: is upgrade CRD when upgrade the helm release
+                    type: boolean
+                  atomic:
+                    description: Atomic, if true, will roll back on failure.
+                    type: boolean
+                  cleanupOnFail:
+                    description: CleanupOnFail will, if true, cause the upgrade to
+                      delete newly-created resources on a failed update.
+                    type: boolean
+                  description:
+                    description: Description is the description of this operation
+                    type: string
+                  devel:
+                    description: Devel indicates that the operation is done in devel
+                      mode.
+                    type: boolean
+                  disableHooks:
+                    description: DisableHooks disables hook processing if set to true.
+                    type: boolean
+                  disableOpenAPIValidation:
+                    description: DisableOpenAPIValidation controls whether OpenAPI
+                      validation is enforced.
+                    type: boolean
+                  force:
+                    description: "Force will, if set to `true`, ignore certain warnings
+                      and perform the upgrade anyway. \n This should be used with
+                      caution."
+                    type: boolean
+                  install:
+                    description: Install Setting this to `true` will NOT cause `Upgrade`
+                      to perform an install if the release does not exist. That process
+                      must be handled by creating an Install action directly. See
+                      cmd/upgrade.go for an example of how this flag is used.
+                    type: boolean
+                  maxHistory:
+                    description: MaxHistory limits the maximum number of revisions
+                      saved per release
+                    type: integer
+                  recreate:
+                    description: Recreate will (if true) recreate pods after a rollback.
+                    type: boolean
+                  resetValues:
+                    description: ResetValues will reset the values to the chart's
+                      built-ins rather than merging with existing.
+                    type: boolean
+                  reuseValues:
+                    description: ReuseValues will re-use the user's last supplied
+                      values.
+                    type: boolean
+                  skipCRDs:
+                    description: SkipCRDs skips installing CRDs when install flag
+                      is enabled during upgrade
+                    type: boolean
+                  subNotes:
+                    description: SubNotes determines whether sub-notes are rendered
+                      in the chart.
+                    type: boolean
+                  timeout:
+                    description: Timeout is the timeout for this operation
+                    format: int64
+                    type: integer
+                  wait:
+                    description: Wait determines whether the wait operation should
+                      be performed after the upgrade is requested.
+                    type: boolean
+                  waitForJobs:
+                    description: WaitForJobs wait for jobs exec success
+                    type: boolean
+                type: object
+              valuesTemplate:
+                description: Values the helm install values , if values update while
+                  update the helm release
+                properties:
+                  cue:
+                    description: CUETemplate the cue template for helm values in helm
+                      template
+                    properties:
+                      template:
+                        type: string
+                    type: object
+                  yaml:
+                    description: GoYAMLTemplate go yaml template for helm template
+                    properties:
+                      template:
+                        description: CreateParam tpaas middleware app create param
+                        type: object
+                    type: object
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              watchType:
+                type: string
+            type: object
+          status:
+            description: HelmComponentStatus defines the observed state of HelmComponent
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

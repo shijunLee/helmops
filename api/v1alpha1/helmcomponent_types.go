@@ -40,6 +40,9 @@ type HelmComponentSpec struct {
 	ChartVersion string `json:"chartVersion,omitempty"`
 	//ChartName the chart name which will install
 	ChartName string `json:"chartName,omitempty"`
+
+	WatchType string `json:"watchType,omitempty"`
+
 	// Create the chart create options
 	Create Create `json:"create,omitempty"`
 
@@ -54,12 +57,37 @@ type HelmComponentSpec struct {
 
 	// the component return value for  next helm component
 	ReturnValues []ReturnValue `json:"ReturnValues,omitempty"`
+
+	// if this component is an operator , will get the operator is need install
+	Operator *Operator `json:"operator,omitempty"`
 }
 
 // HelmComponentStatus defines the observed state of HelmComponent
 type HelmComponentStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+}
+
+// Operator the operator define component , to get the Operator is need install
+type Operator struct {
+
+	// the operator watch types default : NAMESPACE or CLUSTER
+	WatchType string `json:"watchType"`
+
+	// the operator api groups
+	APIGroup string `json:"apiGroup"`
+
+	// the operator api kinds
+	APIKind string `json:"apiKind"`
+
+	// the operator api group versions
+	Version string `json:"version"`
+
+	// match labels for the operator runtime object notice MatchLabels or MetaName only support one
+	MatchLabels metav1.LabelSelector `json:"matchLabels,omitempty"`
+
+	// the meta name of the operator runtime object
+	MetaName string `json:"metaName,omitempty"`
 }
 
 //ComponentTemplate the component Value template
