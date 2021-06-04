@@ -36,6 +36,34 @@ type HelmApplicationSpec struct {
 type HelmApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// current install step name use ComponentReleaseName for default
+	CurrentStepName string `json:"currentStepName,omitempty"`
+
+	//the install conditions
+	Conditions []Condition `json:"conditions,omitempty"`
+
+	//the return data for install steps
+	StepReturns []StepReturn `json:"stepReturns,omitempty"`
+
+	// the application install status
+	Status string `json:"status,omitempty"`
+}
+
+//StepReturn the application install step return values which define in componse
+type StepReturn struct {
+	StepName string `json:"stepName,omitempty"`
+
+	Values []CreateParam `json:"values,omitempty"`
+}
+
+//StepStatus the application install step status
+type StepStatus struct {
+	// the step name use for ComponentReleaseName
+	Name string `json:"stepName,omitempty"`
+
+	// the step process status
+	Status string `json:"status,omitempty"`
 }
 
 // ComponentStep the step which will install

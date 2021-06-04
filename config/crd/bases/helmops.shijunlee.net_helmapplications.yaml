@@ -82,6 +82,46 @@ spec:
             type: object
           status:
             description: HelmApplicationStatus defines the observed state of HelmApplication
+            properties:
+              conditions:
+                description: the install conditions
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  type: object
+                type: array
+              currentStepName:
+                description: current install step name use ComponentReleaseName for
+                  default
+                type: string
+              status:
+                description: the application install status
+                type: string
+              stepReturns:
+                description: the return data for install steps
+                items:
+                  description: StepReturn the application install step return values
+                    which define in componse
+                  properties:
+                    stepName:
+                      type: string
+                    values:
+                      items:
+                        description: CreateParam tpaas middleware app create param
+                        type: object
+                      type: array
+                  type: object
+                type: array
             type: object
         type: object
     served: true
