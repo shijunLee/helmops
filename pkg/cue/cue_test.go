@@ -48,14 +48,35 @@ func Test_CUE_configMap(t *testing.T) {
 	ctx := cuecontext.New()
 	values := ctx.CompileString(testString)
 
+	s, err := values.Struct()
+	if err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+		return
+	}
+	var paraDef cue.FieldInfo
+	var found bool
+	for i := 0; i < s.Len(); i++ {
+		paraDef = s.Field(i)
+		if paraDef.Name == "parameter" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("parameter not found")
+		return
+	}
+
 	values = values.FillPath(cue.ParsePath("parameter.data"), map[string]string{
 		"test1": "test2",
 	})
+
 	values = values.FillPath(cue.ParsePath("parameter.configMapName"), "test-cue-configmap")
 	//value := values.Lookup("msg")
 	result := values.LookupPath(cue.ParsePath("outputs.configmap"))
 	var resultMap = map[string]interface{}{}
-	err := result.Decode(&resultMap)
+	err = result.Decode(&resultMap)
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
