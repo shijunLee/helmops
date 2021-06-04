@@ -79,7 +79,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 	if !helmOperation.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(helmOperation, helmOperationFinalizer) {
-			controllerutil.AddFinalizer(helmOperation, helmRepoFinalizer)
+			controllerutil.AddFinalizer(helmOperation, helmOperationFinalizer)
 			err = r.Client.Update(ctx, helmOperation)
 			if err != nil {
 				return ctrl.Result{}, err

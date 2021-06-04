@@ -20,11 +20,18 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+)
+
+const (
+	helmComponentFinalizer = "finalizer.helmcomponent.helmops.shijunlee.net"
 )
 
 // HelmComponentReconciler reconciles a HelmComponent object
@@ -48,11 +55,39 @@ type HelmComponentReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 func (r *HelmComponentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = r.Log.WithValues("helmcomponent", req.NamespacedName)
+	log := r.Log.WithValues("helmcomponent", req.NamespacedName)
 
+	helmComponent := &helmopsv1alpha1.HelmComponent{}
+	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, helmComponent)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+		log.Error(err, "find helm component resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
+		return ctrl.Result{}, err
+	}
+	if !helmComponent.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(helmComponent, helmComponentFinalizer) {
+			controllerutil.AddFinalizer(helmComponent, helmComponentFinalizer)
+			err = r.Client.Update(ctx, helmComponent)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		if err = r.removeFinalizer(ctx, helmComponent); err != nil {
+			return ctrl.Result{}, err
+		}
+		controllerutil.RemoveFinalizer(helmComponent, helmRepoFinalizer)
+	}
 	// your logic here
 
 	return ctrl.Result{}, nil
+}
+
+// do some system process like system delete process
+func (r *HelmComponentReconciler) removeFinalizer(ctx context.Context, operation *helmopsv1alpha1.HelmComponent) error {
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
