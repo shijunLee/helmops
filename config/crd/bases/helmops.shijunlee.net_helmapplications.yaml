@@ -41,6 +41,11 @@ spec:
                 items:
                   description: ComponentStep the step which will install
                   properties:
+                    ValuesRefComponentRelease:
+                      description: the values ref from before component release
+                      items:
+                        type: string
+                      type: array
                     checkIfExistNotInstall:
                       description: notice this will check helm template resource ,
                         if have resource install , this will not install and only

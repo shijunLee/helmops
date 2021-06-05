@@ -81,6 +81,9 @@ type ComponentStep struct {
 
 	// the component install params
 	Parameters []ComponentParameter `json:"parameters,omitempty"`
+
+	// the values ref from before component release
+	ValuesRefComponentRelease []string `json:"ValuesRefComponentRelease,omitempty"`
 }
 
 // ComponentParameter the component install param ,notice not both set value and ref ,if set will use value as default

@@ -97,13 +97,14 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// buildStepReleaseHelmOperation build install step releaseHelmOperation for application
-func buildStepReleaseHelmOperation(helmApplication *helmopsv1alpha1.HelmApplication) (*helmopsv1alpha1.HelmOperation, error) {
+// buildStepReleaseHelmOperation build install step releaseHelmOperation for application,the values is the before step return values
+func buildStepReleaseHelmOperation(helmComponent *helmopsv1alpha1.HelmComponent,values map[string]interface{}) (*helmopsv1alpha1.HelmOperation, error) {
+
 	return nil, nil
 }
 
 // watchStepReleaseReady get the step release is ready
-func watchStepReleaseReady(operation *helmopsv1alpha1.HelmOperation) (bool, error) {
+func watchStepReleaseReady(operation *helmopsv1alpha1.HelmOperation, helmComponent *helmopsv1alpha1.HelmComponent) (bool, error) {
 	return false, nil
 }
 
