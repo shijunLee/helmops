@@ -42,6 +42,15 @@ type HelmApplicationStatus struct {
 type ComponentStep struct {
 	// the component will install
 	ComponentName string `json:"componentName,omitempty"`
+
+	// the component release name ,if not set will use the appname-chartname
+	ComponentReleaseName string `json:"componentReleaseName,omitempty"`
+
+	// notice this will check helm template resource , if have resource install ,
+	// this will not install and only install or update the old object,
+	// only support clusterrole serviceaccount and other global resource
+	CheckIfExistNotInstall bool `json:"checkIfExistNotInstall,omitempty"`
+
 	// the component install params
 	Parameters []ComponentParameter `json:"parameters,omitempty"`
 }
@@ -56,8 +65,6 @@ type ComponentParameter struct {
 
 	// the value type for parameter , will try to convert value to the set type not set will use default string
 	Type string `json:"type,omitempty"`
-	// ref parameter from other helm component
-	Ref *RefParameter `json:"ref,omitempty"`
 }
 
 // RefParameter the parameter from the other component

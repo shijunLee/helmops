@@ -41,8 +41,18 @@ spec:
                 items:
                   description: ComponentStep the step which will install
                   properties:
+                    checkIfExistNotInstall:
+                      description: notice this will check helm template resource ,
+                        if have resource install , this will not install and only
+                        install or update the old object, only support clusterrole
+                        serviceaccount and other global resource
+                      type: boolean
                     componentName:
                       description: the component will install
+                      type: string
+                    componentReleaseName:
+                      description: the component release name ,if not set will use
+                        the appname-chartname
                       type: string
                     parameters:
                       description: the component install params
@@ -54,16 +64,6 @@ spec:
                           name:
                             description: the parameter name
                             type: string
-                          ref:
-                            description: ref parameter from other helm component
-                            properties:
-                              componentName:
-                                description: the helm component Name
-                                type: string
-                              returnDateName:
-                                description: the helm component return date name define
-                                type: string
-                            type: object
                           type:
                             description: the value type for parameter , will try to
                               convert value to the set type not set will use default
