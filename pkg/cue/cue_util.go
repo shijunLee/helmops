@@ -209,7 +209,6 @@ func (r *ReleaseDef) buildValues(outSideValues map[string]interface{}) (map[stri
 			continue
 		}
 		var param = Parameter{
-
 			Name:     fi.Name,
 			Required: !fi.IsOptional,
 		}
@@ -226,8 +225,13 @@ func (r *ReleaseDef) buildValues(outSideValues map[string]interface{}) (map[stri
 
 		params = append(params, param)
 	}
+	values = values.FillPath(cue.ParsePath("parameter"),outSideValues)
+	resultValue := values.LookupPath(cue.ParsePath("output"))
 	var result = map[string]interface{}{}
-
+	err = resultValue.Decode(&result)
+	if err != nil {
+		return nil,err
+	}
 	return result, nil
 }
 

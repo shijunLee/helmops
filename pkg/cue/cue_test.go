@@ -33,10 +33,10 @@ const testString = `
 		data: [string]: string 
 		configMapName: *"test-nginx-config" | string
 		test:{
-			group: "test-111" | string
-			version: "test-222" | string
-			resource: "test-3333"| string
-            workloadName: "test-4444" | string
+			group: *"test-111" | string
+			version: *"test-222" | string
+			resource: *"test-3333"| string
+            workloadName: *"test-4444" | string
         }
         container:{
         	name: *"test-ccc" |  string
@@ -50,13 +50,20 @@ const testString = `
 	  outputs: configmap: {
 		  apiVersion: "v1"
 		  kind:       "ConfigMap"
-		  metadata:
+		  metadata:{
 			name: parameter.configMapName
+          } 
 		  data: {
 			for k, v in parameter.data {
 			  "\(k)": v
 			}, 
 			imagePullSecrets: parameter.container.imagePullSecrets
+			test: {
+				group: parameter.test.group
+ 				version: parameter.test.version
+				resource: parameter.test.resource
+ 				workloadName: parameter.test.workloadName
+			}
 		  }  
 	  }`
 
@@ -145,11 +152,24 @@ func Test_CUE_configMap(t *testing.T) {
 		return
 	}
 
-	values = values.FillPath(cue.ParsePath("parameter.data"), map[string]string{
-		"test1": "test2",
+	values = values.FillPath(cue.ParsePath("parameter"), map[string]interface{}{
+		"data":map[string]string{
+			"test1": "test2",
+		},
+		"configMapName":"test-config-cue-map",
+		"test":map[string]string{
+			"group": "test-group-222",
+		},
+		"container":map[string]interface{}{
+			"imagePullSecrets":[]interface{}{
+				map[string]string{
+					"name":"test",
+				},
+			},
+		},
 	})
 
-	values = values.FillPath(cue.ParsePath("parameter.configMapName"), "test-cue-configmap")
+//	values = values.FillPath(cue.ParsePath("parameter.configMapName"), "test-cue-configmap")
 	//value := values.Lookup("msg")
 	result := values.LookupPath(cue.ParsePath("outputs.configmap"))
 	var resultMap = map[string]interface{}{}

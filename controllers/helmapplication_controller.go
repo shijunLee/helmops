@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/shijunLee/helmops/pkg/cue"
 
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -98,9 +99,12 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // buildStepReleaseHelmOperation build install step releaseHelmOperation for application,the values is the before step return values
-func buildStepReleaseHelmOperation(helmComponent *helmopsv1alpha1.HelmComponent,values map[string]interface{}) (*helmopsv1alpha1.HelmOperation, error) {
-
-	return nil, nil
+func buildStepReleaseHelmOperation(namespace string,stepDef *helmopsv1alpha1.ComponentStep,helmComponent *helmopsv1alpha1.HelmComponent,
+	values map[string]interface{}) (*helmopsv1alpha1.HelmOperation, error) {
+	var cueRef = cue.NewReleaseDef(stepDef.ComponentReleaseName,namespace,
+		helmComponent.Spec.ChartName,helmComponent.Spec.ChartVersion,helmComponent.Spec.ChartRepoName,false,nil,
+		helmComponent.Spec.ValuesTemplate.CUE.Template)
+	return cueRef.BuildReleaseWorkload(values)
 }
 
 // watchStepReleaseReady get the step release is ready
