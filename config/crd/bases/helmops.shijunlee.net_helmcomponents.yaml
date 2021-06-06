@@ -185,14 +185,22 @@ spec:
                   not wait for this job
                 properties:
                   apiGroup:
+                    description: the api group of the stable status
                     type: string
                   jsonPath:
+                    description: the stable status value json path string
+                    type: string
+                  name:
+                    description: the resource name
                     type: string
                   resource:
+                    description: the kind of the stable resource
                     type: string
                   value:
+                    description: the stable value
                     type: string
                   version:
+                    description: the version of stable resource
                     type: string
                 type: object
               uninstall:

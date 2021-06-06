@@ -17,8 +17,19 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"text/template"
+
+	"k8s.io/apimachinery/pkg/util/json"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/Masterminds/sprig/v3"
+	"github.com/pkg/errors"
 	"github.com/shijunLee/helmops/pkg/cue"
+	"github.com/thedevsaddam/gojsonq"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -99,20 +110,88 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // buildStepReleaseHelmOperation build install step releaseHelmOperation for application,the values is the before step return values
-func buildStepReleaseHelmOperation(namespace string,stepDef *helmopsv1alpha1.ComponentStep,helmComponent *helmopsv1alpha1.HelmComponent,
+func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Context, namespace string,
+	stepDef *helmopsv1alpha1.ComponentStep, helmComponent *helmopsv1alpha1.HelmComponent,
 	values map[string]interface{}) (*helmopsv1alpha1.HelmOperation, error) {
-	var cueRef = cue.NewReleaseDef(stepDef.ComponentReleaseName,namespace,
-		helmComponent.Spec.ChartName,helmComponent.Spec.ChartVersion,helmComponent.Spec.ChartRepoName,false,nil,
+	var cueRef = cue.NewReleaseDef(stepDef.ComponentReleaseName, namespace,
+		helmComponent.Spec.ChartName, helmComponent.Spec.ChartVersion, helmComponent.Spec.ChartRepoName, false, nil,
 		helmComponent.Spec.ValuesTemplate.CUE.Template)
 	return cueRef.BuildReleaseWorkload(values)
 }
 
 // watchStepReleaseReady get the step release is ready
-func watchStepReleaseReady(operation *helmopsv1alpha1.HelmOperation, helmComponent *helmopsv1alpha1.HelmComponent) (bool, error) {
+func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, operation *helmopsv1alpha1.HelmOperation,
+	helmComponent *helmopsv1alpha1.HelmComponent) (bool, error) {
+
+	// if not set stable status check ,return true,do nothing
+	if helmComponent.Spec.StableStatus == nil {
+		return true, nil
+	}
+	s := helmComponent.Spec.StableStatus
+	//check operation is install
+	err := r.Client.Get(ctx, types.NamespacedName{Name: operation.Name, Namespace: operation.Namespace}, operation)
+	if err != nil {
+		r.Log.Info("check helm component is error", "errInfo", err)
+		return false, nil
+	}
+	releaseName := operation.Name
+	releaseNamespace := operation.Namespace
+
+	// set release param for template the resource name
+	var releaseDefaultValueMap = map[string]interface{}{
+		"Release": map[string]string{
+			"Name":      releaseName,
+			"Namespace": releaseNamespace,
+		},
+		"Chart": map[string]interface{}{
+			"Name":    operation.Spec.ChartName,
+			"Version": operation.Spec.ChartVersion,
+		},
+	}
+	resourceName := ""
+	// use go txt template for get the resource name from config
+	tt := template.New("gotpl").Funcs(sprig.TxtFuncMap())
+	tt, err = tt.Parse(helmComponent.Spec.StableStatus.Name)
+	if err == nil {
+		objBuff := &bytes.Buffer{}
+		err = tt.Execute(objBuff, releaseDefaultValueMap)
+		if err == nil {
+			resourceName = objBuff.String()
+		}
+	}
+	if resourceName == "" {
+		return false, errors.New("get resource name error")
+	}
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
+	obj.SetGroupVersionKind(schema.GroupVersionKind{Group: s.APIGroup, Version: s.Version, Kind: s.Kind})
+	err = r.Client.Get(ctx, types.NamespacedName{Name: resourceName, Namespace: operation.Namespace}, obj)
+	if err != nil {
+		return false, nil
+	}
+	// user jsonq get the resource json path values and cmp the component yaml set values for the resource
+	jsonData, err := json.Marshal(obj)
+	if err != nil {
+		r.Log.Info("obj marshal json error", "errInfo", err)
+		return false, nil
+	}
+
+	data := gojsonq.New().FromString(string(jsonData)).Find(s.JSONPath)
+	if data != nil {
+		if dataString, ok := data.(string); ok && dataString == s.Value {
+			return true, nil
+		}
+	}
+
 	return false, nil
 }
 
 // get step release return data
-func getStepReleaseReturnData(operation *helmopsv1alpha1.HelmOperation, helmComponent *helmopsv1alpha1.HelmComponent) (map[string]interface{}, error) {
+func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context, operation *helmopsv1alpha1.HelmOperation,
+	helmComponent *helmopsv1alpha1.HelmComponent) (map[string]interface{}, error) {
+	//TODO: check step status ready
+	//TODO: Get resource from kuberbetes
+	//TODO: From raw values get the value use json string , notice type convert
+	//TODO: Use go template render the value or go format the value ( go format first)
+	//TODO: return all values,notice the return value key use property format
 	return nil, nil
 }

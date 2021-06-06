@@ -129,11 +129,19 @@ type HelmComponentList struct {
 
 // StableStatus this is to get helm component stable status
 type StableStatus struct {
+
+	//the api group of the stable status
 	APIGroup string `json:"apiGroup,omitempty"`
-	Version  string `json:"version,omitempty"`
-	Resource string `json:"resource,omitempty"`
+	// the version of stable resource
+	Version string `json:"version,omitempty"`
+	// the kind of the stable resource
+	Kind string `json:"resource,omitempty"`
+	// the stable status value json path string
 	JSONPath string `json:"jsonPath,omitempty"`
-	Value    string `json:"value,omitempty"`
+	//the resource name
+	Name string `json:"name,omitempty"`
+	// the stable value
+	Value string `json:"value,omitempty"`
 }
 
 type ReturnValue struct {
