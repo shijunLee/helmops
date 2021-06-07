@@ -9,11 +9,12 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
+//DownloadChart download helm chart to local cache folder
 func DownloadChart(chartUrl, username, password string) (*chart.Chart, error) {
 	return DownloadChartWithTLS(chartUrl, username, password, "", "", "", true)
 }
 
-// DownloadChart download helm chart to local cache folder
+//DownloadChartWithTLS download helm chart to local cache folder
 // chartUrl chart download url
 // username the chart repo auth username
 // password the chart repo auth password
@@ -26,6 +27,7 @@ func DownloadChartWithTLS(chartUrl, username, password string,
 	return loader.LoadArchive(buff)
 }
 
+//DownloadChartArchive download chart Archive and get chart Archive bytes buffer
 func DownloadChartArchive(chartUrl, username, password string, caPath, certPath, privateKeyPath string, insecureSkipTLSVerify bool) (*bytes.Buffer, error) {
 	var opts []HttpRequestOptions
 	if username != "" && password != "" {
