@@ -92,6 +92,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmRepo")
 		os.Exit(1)
 	}
+
 	if err = (&controllers.HelmOperationReconciler{
 		Client:     mgr.GetClient(),
 		Log:        ctrl.Log.WithName("controllers").WithName("HelmOperation"),
@@ -138,6 +139,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// add helm repo process while mgr is started
+	helmRepoProcess := controllers.NewRepoUpdate(helmRepoReconciler)
+	mgr.Add(helmRepoProcess)
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")

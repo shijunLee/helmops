@@ -90,7 +90,8 @@ func NewHelmRepoReconciler(mgr ctrl.Manager, period, maxConcurrentReconciles int
 	return result
 }
 
-func (r *HelmRepoReconciler) startUpdateProcess(ctx context.Context) {
+// StartUpdateProcess start auto update repo process
+func (r *HelmRepoReconciler) StartUpdateProcess(ctx context.Context) {
 	if r.JitterPeriod == 0 {
 		r.JitterPeriod = 1 * time.Second
 	}
@@ -390,5 +391,18 @@ func (r *HelmRepoReconciler) removeFinalizer(ctx context.Context, helmRepo *helm
 		return errors.New("convert repo item to cache")
 	}
 	chartRepo.Close()
+	return nil
+}
+
+type RepoUpdate struct {
+	helmRepoReconciler *HelmRepoReconciler
+}
+
+func NewRepoUpdate(r *HelmRepoReconciler) *RepoUpdate {
+	return &RepoUpdate{helmRepoReconciler: r}
+}
+
+func (r *RepoUpdate) Start(ctx context.Context) error {
+	r.helmRepoReconciler.StartUpdateProcess(ctx)
 	return nil
 }

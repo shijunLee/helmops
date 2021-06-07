@@ -116,7 +116,7 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 //TODO: if namespace scope operator use clusterrole or clusterrolebinding ,update clusterrole and clusterrolebinding ,not recreate it.
 func (r *HelmApplicationReconciler) processOperatorHelmReleaseInstall(ctx context.Context, operation *helmopsv1alpha1.HelmOperation,
 	helmComponent *helmopsv1alpha1.HelmComponent) {
-
+	//TODO: this method not use ,to use for anthod time
 }
 
 //checkOperatorIsExist get the operator is install in the cluster
