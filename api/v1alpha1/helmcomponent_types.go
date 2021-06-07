@@ -84,7 +84,7 @@ type Operator struct {
 	Version string `json:"version"`
 
 	// match labels for the operator runtime object notice MatchLabels or MetaName only support one
-	MatchLabels metav1.LabelSelector `json:"matchLabels,omitempty"`
+	MatchLabels *metav1.LabelSelector `json:"matchLabels,omitempty"`
 
 	// the meta name of the operator runtime object
 	MetaName string `json:"metaName,omitempty"`
@@ -148,9 +148,11 @@ type ReturnValue struct {
 	Name          string   `json:"name"`
 	APIGroup      string   `json:"apiGroup,omitempty"`
 	Version       string   `json:"version,omitempty"`
-	Resource      string   `json:"resource,omitempty"`
+	Kind          string   `json:"resource,omitempty"`
 	JSONPaths     []string `json:"jsonPaths,omitempty"`
 	ValueTemplate string   `json:"valueTemplate,omitempty"`
+	ResourceName  string   `json:"resourceName,omitempty"`
+	JoinSplit     string   `json:"joinSplit,omitempty"`
 }
 
 func init() {

@@ -49,6 +49,7 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+//TODO: need build new kube.Interface impl for this project, need get resource from client
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool

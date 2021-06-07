@@ -19,6 +19,8 @@ package controllers
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"strings"
 	"text/template"
 
 	"k8s.io/apimachinery/pkg/util/json"
@@ -33,6 +35,7 @@ import (
 
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -109,6 +112,65 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+//processOperatorHelmReleaseInstall process operator helm release , get operator is install in the cluster or namespace , if not install will install
+//TODO: if namespace scope operator use clusterrole or clusterrolebinding ,update clusterrole and clusterrolebinding ,not recreate it.
+func (r *HelmApplicationReconciler) processOperatorHelmReleaseInstall(ctx context.Context, operation *helmopsv1alpha1.HelmOperation,
+	helmComponent *helmopsv1alpha1.HelmComponent) {
+
+}
+
+//checkOperatorIsExist get the operator is install in the cluster
+func (r *HelmApplicationReconciler) checkOperatorIsExist(ctx context.Context, namespace string, helmComponent *helmopsv1alpha1.HelmComponent) (bool, error) {
+	operator := helmComponent.Spec.Operator
+	if operator == nil {
+		return true, nil
+	}
+	if operator.MetaName != "" {
+		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
+		obj.SetGroupVersionKind(schema.GroupVersionKind{Group: operator.APIGroup, Kind: operator.APIKind, Version: operator.Version})
+		var getInfo = types.NamespacedName{Name: operator.MetaName}
+		if operator.WatchType == "Namespace" {
+			getInfo.Namespace = namespace
+		}
+		err := r.Client.Get(ctx, getInfo, obj)
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, err
+	}
+	if operator.MatchLabels != nil {
+		// if selector convert failed ,return false , reinstall the operator
+		selecter, err := apimachinerymetav1.LabelSelectorAsSelector(operator.MatchLabels)
+		if err != nil {
+			r.Log.Error(err, "convert meta v1 match labels selector to apimachinery selector error")
+			return false, err
+		}
+		listOpts := &client.ListOptions{LabelSelector: selecter}
+		if operator.WatchType == "Namespace" {
+			listOpts.Namespace = namespace
+		}
+		var listKind = fmt.Sprintf("%sList", operator.APIKind)
+		objList := &unstructured.UnstructuredList{Object: map[string]interface{}{}}
+		objList.SetGroupVersionKind(schema.GroupVersionKind{Group: operator.APIGroup, Kind: listKind, Version: operator.Version})
+		err = r.Client.List(ctx, objList, listOpts)
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		if len(objList.Items) == 0 {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // buildStepReleaseHelmOperation build install step releaseHelmOperation for application,the values is the before step return values
 func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Context, namespace string,
 	stepDef *helmopsv1alpha1.ComponentStep, helmComponent *helmopsv1alpha1.HelmComponent,
@@ -134,31 +196,13 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 		r.Log.Info("check helm component is error", "errInfo", err)
 		return false, nil
 	}
-	releaseName := operation.Name
-	releaseNamespace := operation.Namespace
+	releaseDefaultValueMap := getReleaseStatusMap(operation)
+	resourceName, err := renderStringUseGoTemplate(ctx, s.Name, releaseDefaultValueMap)
+	if err != nil {
+		r.Log.Info("render string use go template in watch step release ready error", "errInfo", err)
+		return false, err
+	}
 
-	// set release param for template the resource name
-	var releaseDefaultValueMap = map[string]interface{}{
-		"Release": map[string]string{
-			"Name":      releaseName,
-			"Namespace": releaseNamespace,
-		},
-		"Chart": map[string]interface{}{
-			"Name":    operation.Spec.ChartName,
-			"Version": operation.Spec.ChartVersion,
-		},
-	}
-	resourceName := ""
-	// use go txt template for get the resource name from config
-	tt := template.New("gotpl").Funcs(sprig.TxtFuncMap())
-	tt, err = tt.Parse(helmComponent.Spec.StableStatus.Name)
-	if err == nil {
-		objBuff := &bytes.Buffer{}
-		err = tt.Execute(objBuff, releaseDefaultValueMap)
-		if err == nil {
-			resourceName = objBuff.String()
-		}
-	}
 	if resourceName == "" {
 		return false, errors.New("get resource name error")
 	}
@@ -185,13 +229,107 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 	return false, nil
 }
 
-// get step release return data
+//renderStringUseGoTemplate render template string use go template
+func renderStringUseGoTemplate(ctx context.Context, templateString string, values map[string]interface{}) (string, error) {
+	var result = ""
+	// use go txt template for get the resource name from config
+	tt := template.New("gotpl").Funcs(sprig.TxtFuncMap())
+	tt, err := tt.Parse(templateString)
+	if err == nil {
+		objBuff := &bytes.Buffer{}
+		err = tt.Execute(objBuff, values)
+		if err == nil {
+			result = objBuff.String()
+		} else {
+			return "", err
+		}
+	} else {
+		return "", err
+	}
+	return result, nil
+}
+
+//getStepReleaseReturnData get step release return data
 func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context, operation *helmopsv1alpha1.HelmOperation,
 	helmComponent *helmopsv1alpha1.HelmComponent) (map[string]interface{}, error) {
-	//TODO: check step status ready
-	//TODO: Get resource from kuberbetes
-	//TODO: From raw values get the value use json string , notice type convert
-	//TODO: Use go template render the value or go format the value ( go format first)
-	//TODO: return all values,notice the return value key use property format
-	return nil, nil
+	status, err := r.watchStepReleaseReady(ctx, operation, helmComponent)
+	if !status || err != nil {
+		if err != nil {
+			r.Log.Info("get helm component return data error, status not ready and get some error", "errInfo", err)
+			return nil, err
+		}
+		r.Log.Info("get helm component status not ready in get stepReleaseReturnData")
+		return nil, errors.New("get helm component status not ready in get stepReleaseReturnData")
+	}
+	var resultMap = map[string]interface{}{}
+	returnValuesDefines := helmComponent.Spec.ReturnValues
+	releaseDefineValues := getReleaseStatusMap(operation)
+	for _, item := range returnValuesDefines {
+		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
+		obj.SetGroupVersionKind(schema.GroupVersionKind{Group: item.APIGroup, Version: item.Version, Kind: item.Kind})
+		resourceName, err := renderStringUseGoTemplate(ctx, item.ResourceName, releaseDefineValues)
+		if err != nil {
+			r.Log.Info("get resource with go template in getStepReleaseReturnData error", "errorInfo", err)
+			return nil, err
+		}
+		err = r.Client.Get(ctx, types.NamespacedName{Name: resourceName, Namespace: operation.Namespace}, obj)
+		if err != nil {
+			r.Log.Info("get return value from object error")
+			return nil, err
+		}
+		// user jsonq get the resource json path values and cmp the component yaml set values for the resource
+		jsonData, err := json.Marshal(obj)
+		if err != nil {
+			r.Log.Info("obj marshal json error", "errInfo", err)
+			return nil, err
+		}
+		var values []interface{}
+		for _, jsonPath := range item.JSONPaths {
+			data := gojsonq.New().FromString(string(jsonData)).Find(jsonPath)
+			if data != nil {
+				values = append(values, data)
+			}
+		}
+		var returnValue = ""
+		if item.ValueTemplate != "" {
+			returnValue = fmt.Sprintf(item.ValueTemplate, values...)
+			resultMap[item.Name] = returnValue
+		} else if len(values) == 1 {
+			resultMap[item.Name] = values[0]
+		} else {
+			var stringStr []string
+			for _, objectItem := range values {
+				stringStr = append(stringStr, fmt.Sprintf("%v", objectItem))
+			}
+			if item.JoinSplit == "" {
+				item.JoinSplit = "-"
+			}
+			resultMap[item.Name] = strings.Join(stringStr, item.JoinSplit)
+		}
+
+	}
+
+	return resultMap, nil
+}
+
+// getReleaseStatusMap get release status map for operation
+func getReleaseStatusMap(operation *helmopsv1alpha1.HelmOperation) map[string]interface{} {
+	if operation == nil {
+		return map[string]interface{}{}
+	}
+	releaseName := operation.Name
+	releaseNamespace := operation.Namespace
+
+	// set release param for template the resource name
+	var releaseDefaultValueMap = map[string]interface{}{
+		"Release": map[string]string{
+			"Name":      releaseName,
+			"Namespace": releaseNamespace,
+		},
+		"Chart": map[string]interface{}{
+			"Name":    operation.Spec.ChartName,
+			"Version": operation.Spec.ChartVersion,
+		},
+	}
+	return releaseDefaultValueMap
 }

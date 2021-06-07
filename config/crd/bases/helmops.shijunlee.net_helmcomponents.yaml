@@ -42,6 +42,8 @@ spec:
                   properties:
                     apiGroup:
                       type: string
+                    joinSplit:
+                      type: string
                     jsonPaths:
                       items:
                         type: string
@@ -49,6 +51,8 @@ spec:
                     name:
                       type: string
                     resource:
+                      type: string
+                    resourceName:
                       type: string
                     valueTemplate:
                       type: string
