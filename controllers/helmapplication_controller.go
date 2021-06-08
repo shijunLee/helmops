@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"text/template"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/json"
 
@@ -30,6 +32,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 	"github.com/shijunLee/helmops/pkg/cue"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 	"github.com/thedevsaddam/gojsonq"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -88,10 +91,86 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		}
 		controllerutil.RemoveFinalizer(helmApplication, helmRepoFinalizer)
 	}
+	// not define steps ,return not process
+	if len(helmApplication.Spec.Steps) == 0 {
+		return ctrl.Result{}, nil
+	}
+	var values = map[string]interface{}{}
+	for _, step := range helmApplication.Spec.Steps {
+		cmp, err := r.getApplicationStepComponent(ctx, step)
+		if err != nil {
+			// if component not found ,add status
+			if k8serrors.IsNotFound(err) {
+				return ctrl.Result{}, nil
+			}
+			return ctrl.Result{}, err
+		}
 
-	// your logic here
+		helmOperation, err := r.buildStepReleaseHelmOperation(ctx, helmApplication.Namespace, step, values)
+		if err != nil {
+			//TODO: update status for the application ,build operation failed
+			return ctrl.Result{}, nil
+		}
+		exist, opsObj, err := r.checkOperationIsExist(ctx, helmOperation)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+		}
+		if !exist {
+			err = r.Client.Create(ctx, helmOperation)
+			if err != nil {
+				log.Error(err, "create helm operation return error")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{RequeueAfter: time.Second}, nil
+		} else {
+			// if spec not equal ,update helmOperation and wait 1 second
+			if !reflect.DeepEqual(helmOperation.Spec, opsObj.Spec) {
+				opsObj.Spec = helmOperation.Spec
+				err = r.Client.Update(ctx, opsObj)
+				if err != nil {
+					log.Error(err, "create helm operation return error")
+					return ctrl.Result{}, err
+				}
+				return ctrl.Result{RequeueAfter: time.Second}, nil
+			}
+		}
+		// do check componse status
+		isReady, err := r.watchStepReleaseReady(ctx, helmOperation, cmp)
+		if err != nil {
+			r.Log.Error(err, "get cmp is ready error")
+			return ctrl.Result{RequeueAfter: time.Second}, err
+		}
+		if !isReady {
+			return ctrl.Result{RequeueAfter: time.Second}, nil
+		}
+
+		data, err := r.getStepReleaseReturnData(ctx, helmOperation, cmp)
+		if err != nil {
+			r.Log.Error(err, "get return data error")
+			return ctrl.Result{}, err
+		}
+		// TODO: update step return data
+
+		values[step.ComponentReleaseName] = data
+
+	}
 
 	return ctrl.Result{}, nil
+}
+
+//checkOperationIsExist check operation is install or not
+func (r *HelmApplicationReconciler) checkOperationIsExist(ctx context.Context, helmOperation *helmopsv1alpha1.HelmOperation) (bool, *helmopsv1alpha1.HelmOperation, error) {
+	var obj = &helmopsv1alpha1.HelmOperation{}
+	err := r.Client.Get(ctx, types.NamespacedName{Name: helmOperation.Name, Namespace: helmOperation.Namespace}, obj)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return false, nil, nil
+		}
+		return false, nil, err
+	}
+
+	return true, obj, nil
+
 }
 
 func (r *HelmApplicationReconciler) removeFinalizer(ctx context.Context, helmApplication *helmopsv1alpha1.HelmApplication) error {
@@ -103,6 +182,19 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&helmopsv1alpha1.HelmApplication{}).
 		Complete(r)
+}
+
+//getApplicationStepComponent get application install step use component
+func (r *HelmApplicationReconciler) getApplicationStepComponent(ctx context.Context, stepDef helmopsv1alpha1.ComponentStep) (*helmopsv1alpha1.HelmComponent, error) {
+	if stepDef.ComponentName == "" {
+		return nil, errors.New("not define step component name")
+	}
+	var helmComponent = &helmopsv1alpha1.HelmComponent{}
+	err := r.Client.Get(ctx, types.NamespacedName{Namespace: utils.GetCurrentNameSpace(), Name: stepDef.ComponentReleaseName}, helmComponent)
+	if err != nil {
+		return nil, err
+	}
+	return helmComponent, nil
 }
 
 //processOperatorHelmReleaseInstall process operator helm release , get operator is install in the cluster or namespace , if not install will install
@@ -166,12 +258,29 @@ func (r *HelmApplicationReconciler) checkOperatorIsExist(ctx context.Context, na
 
 // buildStepReleaseHelmOperation build install step releaseHelmOperation for application,the values is the before step return values
 func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Context, namespace string,
-	stepDef *helmopsv1alpha1.ComponentStep, helmComponent *helmopsv1alpha1.HelmComponent,
+	stepDef helmopsv1alpha1.ComponentStep, // helmComponent *helmopsv1alpha1.HelmComponent,
 	values map[string]interface{}) (*helmopsv1alpha1.HelmOperation, error) {
+	helmComponent, err := r.getApplicationStepComponent(ctx, stepDef)
+	if err != nil {
+		return nil, err
+	}
+	var refValues = map[string]interface{}{}
+	for _, item := range stepDef.ValuesRefComponentRelease {
+		value, ok := values[item]
+		if ok {
+			valueMap, ok := value.(map[string]interface{})
+			if ok {
+				for k, v := range valueMap {
+					refValues[k] = v
+				}
+			}
+
+		}
+	}
 	var cueRef = cue.NewReleaseDef(stepDef.ComponentReleaseName, namespace,
 		helmComponent.Spec.ChartName, helmComponent.Spec.ChartVersion, helmComponent.Spec.ChartRepoName, false, nil,
 		helmComponent.Spec.ValuesTemplate.CUE.Template)
-	return cueRef.BuildReleaseWorkload(values)
+	return cueRef.BuildReleaseWorkload(refValues)
 }
 
 // watchStepReleaseReady get the step release is ready
