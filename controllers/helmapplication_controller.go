@@ -97,6 +97,7 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 	var values = map[string]interface{}{}
 	for _, step := range helmApplication.Spec.Steps {
+
 		cmp, err := r.getApplicationStepComponent(ctx, step)
 		if err != nil {
 			// if component not found ,add status
@@ -104,6 +105,17 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 				return ctrl.Result{}, nil
 			}
 			return ctrl.Result{}, err
+		}
+		operator := cmp.Spec.Operator
+		if operator != nil {
+			isExist, err := r.checkOperatorIsExist(ctx, helmApplication.Namespace, cmp)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			// if operator is install do not install this step and do install others
+			if isExist {
+				continue
+			}
 		}
 
 		helmOperation, err := r.buildStepReleaseHelmOperation(ctx, helmApplication.Namespace, step, values)
