@@ -62,9 +62,7 @@ type HelmOperationReconciler struct {
 // the HelmOperation object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
-//TODO add revision support
+
 func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("helmoperation", req.NamespacedName)
 
