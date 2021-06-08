@@ -299,9 +299,7 @@ func (r *HelmRepoReconciler) DoRepoSyncReconcile(ctx context.Context, req syncUp
 // the HelmRepo object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
+
 func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("helmrepo", req.NamespacedName)
 	log.Info("Watch repo reconciler event ", "ResourceName", req.Name)
