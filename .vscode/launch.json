@@ -9,7 +9,11 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${fileDirname}"
+            "program": "${workspaceFolder}/main.go",
+            "env": {
+                "HELM_OPS_NAMESPACE":"helm-ops"
+            },
+            "args": ["--local-cache-path=./tmp/helm/cache","--zap-log-level=debug"]
         }
     ]
 }

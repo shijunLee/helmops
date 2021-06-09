@@ -171,7 +171,7 @@ type Condition struct {
 //+kubebuilder:printcolumn:name="ChartName",type="string",JSONPath=".spec.chartName"
 //+kubebuilder:printcolumn:name="ChartVersion",type="string",JSONPath=".spec.chartVersion"
 //+kubebuilder:printcolumn:name="RepoName",type="string",JSONPath=".spec.chartRepoName"
-//+kubebuilder:printcolumn:name="AutoUpdate",type="bool",JSONPath=".spec.autoUpdate"
+//+kubebuilder:printcolumn:name="AutoUpdate",type="boolean",JSONPath=".spec.autoUpdate"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // HelmOperation is the Schema for the helmoperations API

@@ -28,7 +28,7 @@ spec:
       type: string
     - jsonPath: .spec.autoUpdate
       name: AutoUpdate
-      type: bool
+      type: boolean
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date

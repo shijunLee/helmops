@@ -67,7 +67,7 @@ const testString = `
 		  }  
 	  }`
 
-func Test_CUE_param(t *testing.T){
+func Test_CUE_param(t *testing.T) {
 	ctx := cuecontext.New()
 	values := ctx.CompileString(testString)
 
@@ -119,8 +119,8 @@ func Test_CUE_param(t *testing.T){
 
 		params = append(params, param)
 	}
-	data ,err := json.Marshal(params)
-	if err!=nil{
+	data, err := json.Marshal(params)
+	if err != nil {
 		t.Fatal(err)
 		return
 	}
@@ -153,23 +153,23 @@ func Test_CUE_configMap(t *testing.T) {
 	}
 
 	values = values.FillPath(cue.ParsePath("parameter"), map[string]interface{}{
-		"data":map[string]string{
+		"data": map[string]string{
 			"test1": "test2",
 		},
-		"configMapName":"test-config-cue-map",
-		"test":map[string]string{
+		"configMapName": "test-config-cue-map",
+		"test": map[string]string{
 			"group": "test-group-222",
 		},
-		"container":map[string]interface{}{
-			"imagePullSecrets":[]interface{}{
+		"container": map[string]interface{}{
+			"imagePullSecrets": []interface{}{
 				map[string]string{
-					"name":"test",
+					"name": "test",
 				},
 			},
 		},
 	})
 
-//	values = values.FillPath(cue.ParsePath("parameter.configMapName"), "test-cue-configmap")
+	//	values = values.FillPath(cue.ParsePath("parameter.configMapName"), "test-cue-configmap")
 	//value := values.Lookup("msg")
 	result := values.LookupPath(cue.ParsePath("outputs.configmap"))
 	var resultMap = map[string]interface{}{}
