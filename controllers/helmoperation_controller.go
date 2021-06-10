@@ -109,7 +109,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, err
 		}
 	}
-	log.Info("get release install info", "IsCreate", notCreate)
+	log.Info("get release install info", "IsNotCreate", notCreate)
 	chartOptions := &actions.ChartOpts{
 		ChartName:    helmOperation.Spec.ChartName,
 		ChartVersion: helmOperation.Spec.ChartVersion,
