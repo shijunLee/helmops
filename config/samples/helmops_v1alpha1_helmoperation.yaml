@@ -12,7 +12,7 @@ spec:
   create:
     description: "create a log test"
     skipCRDs: false
-    timeout: 5m
+    timeout: 300
     noHook: false
     generateName: false
     createNamespace: false
@@ -25,7 +25,7 @@ spec:
     install: false
     devel: false
     skipCRDs: false
-    timeout: 5m
+    timeout: 300
     wait: false
     disableHooks: false
     force: false
@@ -42,6 +42,6 @@ spec:
   uninstall: 
     disableHooks: false
     keepHistory: false
-    timeout: 5m
+    timeout: 300
     description: "delete a log test"
     doNotDeleteRelease: false

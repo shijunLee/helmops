@@ -159,10 +159,17 @@ func (t *KubernetesClient) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 
 func (t *KubernetesClient) ConvertRestConfigToAPIConfig(restConfig *rest.Config) clientcmdapi.Config {
 	clusters := make(map[string]*clientcmdapi.Cluster)
-	clusters["default-cluster"] = &clientcmdapi.Cluster{
-		Server:                   restConfig.Host,
-		CertificateAuthorityData: restConfig.CAData,
+	clusterInfo := &clientcmdapi.Cluster{
+		Server: restConfig.Host,
 	}
+	if len(restConfig.CAData) > 0 {
+		clusterInfo.CertificateAuthorityData = restConfig.CAData
+	}
+	if restConfig.CAFile != "" {
+		clusterInfo.CertificateAuthority = restConfig.CAFile
+	}
+
+	clusters["default-cluster"] = clusterInfo
 
 	contexts := make(map[string]*clientcmdapi.Context)
 	contexts["default-context"] = &clientcmdapi.Context{

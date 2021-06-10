@@ -21,24 +21,20 @@ import (
 	"reflect"
 	"time"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/shijunLee/helmops/pkg/charts"
-	"github.com/shijunLee/helmops/pkg/helm/utils"
-
-	"helm.sh/helm/v3/pkg/storage/driver"
-
-	"github.com/shijunLee/helmops/pkg/helm/actions"
-	"k8s.io/client-go/rest"
-
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	"github.com/go-logr/logr"
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"helm.sh/helm/v3/pkg/storage/driver"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"github.com/shijunLee/helmops/pkg/charts"
+	"github.com/shijunLee/helmops/pkg/helm/actions"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 const (
@@ -75,7 +71,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Error(err, "find helm operation resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
-	if !helmOperation.DeletionTimestamp.IsZero() {
+	if helmOperation.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(helmOperation, helmOperationFinalizer) {
 			controllerutil.AddFinalizer(helmOperation, helmOperationFinalizer)
 			err = r.Client.Update(ctx, helmOperation)
@@ -87,7 +83,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if err = r.removeFinalizer(ctx, helmOperation); err != nil {
 			return ctrl.Result{}, err
 		}
-		controllerutil.RemoveFinalizer(helmOperation, helmRepoFinalizer)
+		controllerutil.RemoveFinalizer(helmOperation, helmOperationFinalizer)
 	}
 	var getOptions = actions.GetOptions{
 		ReleaseName:       helmOperation.Name,
