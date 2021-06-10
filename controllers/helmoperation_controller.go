@@ -61,17 +61,19 @@ type HelmOperationReconciler struct {
 
 func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("helmoperation", req.NamespacedName)
-
+	log.Info("start operation reconcile")
 	helmOperation := &helmopsv1alpha1.HelmOperation{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, helmOperation)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
+			log.Error(err, "operation not found")
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "find helm operation resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
 	if helmOperation.DeletionTimestamp.IsZero() {
+		log.Info("operation cr not add finalizer start add inalizer")
 		if !controllerutil.ContainsFinalizer(helmOperation, helmOperationFinalizer) {
 			controllerutil.AddFinalizer(helmOperation, helmOperationFinalizer)
 			err = r.Client.Update(ctx, helmOperation)
@@ -81,9 +83,16 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	} else {
 		if err = r.removeFinalizer(ctx, helmOperation); err != nil {
+			log.Error(err, "remove finalizer error")
 			return ctrl.Result{}, err
 		}
 		controllerutil.RemoveFinalizer(helmOperation, helmOperationFinalizer)
+		err = r.Client.Update(ctx, helmOperation)
+		if err != nil {
+			log.Error(err, "remove finalizer add update operation error")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, err
 	}
 	var getOptions = actions.GetOptions{
 		ReleaseName:       helmOperation.Name,
@@ -95,14 +104,17 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		if err == driver.ErrReleaseNotFound {
 			notCreate = true
+
 		}
 	}
+	log.Info("get release install info", "IsCreate", notCreate)
 	chartOptions := &actions.ChartOpts{
 		ChartName:    helmOperation.Spec.ChartName,
 		ChartVersion: helmOperation.Spec.ChartVersion,
 	}
 	repoInfo, ok := repoCache.Load(helmOperation.Spec.ChartRepoName)
 	if !ok {
+		log.Info("load repo not found, after 10 second retry")
 		// if repo not found ,do not process this operation
 		//todo update status for this helmOperation
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
@@ -110,21 +122,25 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	chartRepo, ok := repoInfo.(*charts.ChartRepo)
 	if !ok {
+		log.Info("convert repo to chart repo error, after 10 second retry")
 		// if repo not found ,do not process this operation
 		//todo update status for this helmOperation
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 	if !chartRepo.Operation.CheckChartExist(helmOperation.Spec.ChartName, helmOperation.Spec.ChartVersion) {
+		log.Info("check chart not exit, after 10 second retry", "ChartName", helmOperation.Spec.ChartName, "ChartVersion", helmOperation.Spec.ChartVersion)
 		// if repo not found ,do not process this operation
 		//todo update status for this helmOperation , the chart version not exist
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 	url, pathType, err := chartRepo.Operation.GetChartVersionUrl(helmOperation.Spec.ChartName, helmOperation.Spec.ChartVersion)
 	if err != nil {
+		log.Info("get chart url error, after 10 second retry", "ChartName", helmOperation.Spec.ChartName, "ChartVersion", helmOperation.Spec.ChartVersion)
 		// if repo not found ,do not process this operation
 		//todo update status for this helmOperation , the chart version not exist
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
+	log.Info("get chart url info", "URLType", pathType, "URL", url)
 	switch pathType {
 	case "file":
 		chartOptions.LocalPath = url
@@ -162,6 +178,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		helmOperation.Status.ReleaseStatus = string(release.Info.Status)
 		err = r.Client.Status().Update(ctx, helmOperation)
 		if err != nil {
+			log.Error(err, "update helmOperation status error")
 			// if repo not found ,do not process this operation
 			//todo update status for this helmOperation , the chart version not exist
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
@@ -179,6 +196,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					helmOperation.Status.ReleaseStatus = string(release.Info.Status)
 					err = r.Client.Status().Update(ctx, helmOperation)
 					if err != nil {
+						log.Error(err, "update helmOperation status error in set current chart version")
 						// if repo not found ,do not process this operation
 						//todo update status for this helmOperation , the chart version not exist
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
@@ -224,6 +242,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			helmOperation.Status.ReleaseStatus = string(release.Info.Status)
 			err = r.Client.Status().Update(ctx, helmOperation)
 			if err != nil {
+				log.Error(err, "update helmOperation status error in after helm upgrade current chart version")
 				// if repo not found ,do not process this operation
 				//todo update status for this helmOperation , the chart version not exist
 				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
@@ -233,6 +252,8 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	return ctrl.Result{}, nil
 }
+
+//removeFinalizer remove finalizer
 func (r *HelmOperationReconciler) removeFinalizer(ctx context.Context, operation *helmopsv1alpha1.HelmOperation) error {
 	if operation.Spec.Uninstall.DoNotDeleteRelease {
 		return nil

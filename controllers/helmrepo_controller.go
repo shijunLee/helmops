@@ -308,24 +308,32 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, helmRepo)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
+			log.Error(err, "repo not found")
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "find repo resource from client error", "ResourceName", req.Name)
 		return ctrl.Result{}, err
 	}
-	if !helmRepo.DeletionTimestamp.IsZero() {
+	if helmRepo.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(helmRepo, helmRepoFinalizer) {
 			controllerutil.AddFinalizer(helmRepo, helmRepoFinalizer)
 			err = r.Client.Update(ctx, helmRepo)
 			if err != nil {
+				log.Error(err, "update helm repo add finalizer error")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		if err = r.removeFinalizer(ctx, helmRepo); err != nil {
+			log.Error(err, "remove helm repo finalizer error")
 			return ctrl.Result{}, err
 		}
 		controllerutil.RemoveFinalizer(helmRepo, helmRepoFinalizer)
+		err = r.Client.Update(ctx, helmRepo)
+		if err != nil {
+			log.Error(err, "update helm repo remove finalizer error")
+			return ctrl.Result{}, err
+		}
 	}
 	repo, err := charts.NewChartRepo(helmRepo.Name,
 		string(helmRepo.Spec.RepoType), helmRepo.Spec.RepoURL, helmRepo.Spec.Username,
@@ -337,6 +345,7 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	repo.StartTimerJobs(r.repoCallBack)
+	log.Info("store repo in local cache", "RepoName", helmRepo.Name)
 	repoCache.Store(helmRepo.Name, repo)
 
 	return ctrl.Result{}, nil
