@@ -1,0 +1,10 @@
+apiVersion: helmops.shijunlee.net/v1alpha1
+kind: HelmRepo
+metadata:
+  name: tpaas-itg
+spec:
+  # Add fields here
+  repoType: ChartMuseum
+  repoURL: http://chartmuseum.tools.svc:8080
+  insecureSkipTLS: false
+

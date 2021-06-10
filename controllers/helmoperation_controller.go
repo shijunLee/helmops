@@ -105,6 +105,8 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if err == driver.ErrReleaseNotFound {
 			notCreate = true
 		}
+		log.Error(err, "get helm release error")
+		return ctrl.Result{}, err
 	}
 	log.Info("get release install info", "IsCreate", notCreate)
 	chartOptions := &actions.ChartOpts{
@@ -196,7 +198,11 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			//todo update status for this helmOperation , the chart version not exist
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 	} else {
+		if release == nil {
+			return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
+		}
 		var values = release.Config
 		var installChartVersion = release.Chart.Metadata.Version
 		// if version change or value changes do update process
