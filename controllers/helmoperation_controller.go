@@ -141,6 +141,16 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 	log.Info("get chart url info", "URLType", pathType, "URL", url)
+	chartOptions.RepoOptions = &actions.RepoOptions{
+		RepoName: chartRepo.Name,
+		Username: chartRepo.Username,
+		Password: chartRepo.Password,
+		RepoURL:  chartRepo.URL,
+		RepoType: chartRepo.Type,
+		//TODO: add ca file in here
+		// InsecureSkipTLSVerify skip tls certificate checks for the chart download
+		InsecureSkipTLSVerify: chartRepo.InsecureSkipTLS,
+	}
 	switch pathType {
 	case "file":
 		chartOptions.LocalPath = url
