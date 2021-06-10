@@ -83,6 +83,7 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 		Operation:       operation,
 		CancelChan:      make(chan int),
 	}
+	log.GlobalLog.WithName("chartRepo").Info("create chart repo success", "RepoName", name)
 	return c, nil
 }
 
