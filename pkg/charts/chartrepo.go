@@ -49,7 +49,7 @@ type ChartRepo struct {
 	CancelChan chan int
 }
 
-func NewChartRepo(name, repoType, url, username, password, token, branch, localCache string, insecureSkipTLS bool, period int) (*ChartRepo, error) {
+func NewChartRepo(name, repoType, url, username, password, token, branch, localCache string, insecureSkipTLS bool, period int, callbackFunc func(chart *utils.CommonChartVersion, err error)) (*ChartRepo, error) {
 	if repoType != "Git" && repoType != "ChartMuseum" {
 		return nil, RepoTypeNotSupportErr
 	}
@@ -84,6 +84,7 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 		CancelChan:      make(chan int),
 	}
 	log.GlobalLog.WithName("chartRepo").Info("create chart repo success", "RepoName", name)
+	go c.StartTimerJobs(callbackFunc)
 	return c, nil
 }
 
@@ -97,6 +98,7 @@ func (c *ChartRepo) StartTimerJobs(callbackFunc func(chart *utils.CommonChartVer
 	for {
 		select {
 		case <-timeTicker.C:
+			log.GlobalLog.WithName("RepoTimeJob").Info("start repo sync job", "RepoName", c.Name)
 			chartVersions, err := c.Operation.ListCharts()
 			if err != nil {
 				callbackFunc(nil, err)

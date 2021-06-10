@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -34,7 +35,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	"github.com/shijunLee/helmops/pkg/charts"
@@ -301,51 +304,59 @@ func (r *HelmRepoReconciler) DoRepoSyncReconcile(ctx context.Context, req syncUp
 // the user.
 
 func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("helmrepo", req.NamespacedName)
-	log.Info("Watch repo reconciler event ", "ResourceName", req.Name)
+	l := r.Log.WithValues("helmrepo", req.NamespacedName)
+	l.Info("Watch repo reconciler event ", "ResourceName", req.Name)
 	// your logic here
 	helmRepo := &helmopsv1alpha1.HelmRepo{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, helmRepo)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			log.Error(err, "repo not found")
+			l.Error(err, "repo not found")
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "find repo resource from client error", "ResourceName", req.Name)
+		l.Error(err, "find repo resource from client error", "ResourceName", req.Name)
 		return ctrl.Result{}, err
 	}
 	if helmRepo.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(helmRepo, helmRepoFinalizer) {
+
 			controllerutil.AddFinalizer(helmRepo, helmRepoFinalizer)
 			err = r.Client.Update(ctx, helmRepo)
 			if err != nil {
-				log.Error(err, "update helm repo add finalizer error")
+				l.Error(err, "update helm repo add finalizer error")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		if err = r.removeFinalizer(ctx, helmRepo); err != nil {
-			log.Error(err, "remove helm repo finalizer error")
+			l.Error(err, "remove helm repo finalizer error")
 			return ctrl.Result{}, err
 		}
 		controllerutil.RemoveFinalizer(helmRepo, helmRepoFinalizer)
 		err = r.Client.Update(ctx, helmRepo)
 		if err != nil {
-			log.Error(err, "update helm repo remove finalizer error")
+			l.Error(err, "update helm repo remove finalizer error")
 			return ctrl.Result{}, err
 		}
 	}
-	repo, err := charts.NewChartRepo(helmRepo.Name,
+	repo, ok := repoCache.Load(helmRepo.Name)
+	if ok {
+		chartRepo, ok := repo.(*charts.ChartRepo)
+		if ok {
+			chartRepo.Close()
+		}
+		repoCache.Delete(helmRepo.Name)
+	}
+	repo, err = charts.NewChartRepo(helmRepo.Name,
 		string(helmRepo.Spec.RepoType), helmRepo.Spec.RepoURL, helmRepo.Spec.Username,
 		helmRepo.Spec.Password, helmRepo.Spec.GitAuthToken, helmRepo.Spec.GitBranch,
-		r.LocalCachePath, helmRepo.Spec.InsecureSkipTLS, r.Period)
+		r.LocalCachePath, helmRepo.Spec.InsecureSkipTLS, r.Period, r.repoCallBack)
 	if err != nil {
-		log.Error(err, "create repo error", "ResourceName", req.Name)
+		l.Error(err, "create repo error", "ResourceName", req.Name)
 		return ctrl.Result{RequeueAfter: time.Second * 5}, err
 	}
 
-	repo.StartTimerJobs(r.repoCallBack)
-	log.Info("store repo in local cache", "RepoName", helmRepo.Name)
+	l.Info("store repo in local cache", "RepoName", helmRepo.Name)
 	repoCache.Store(helmRepo.Name, repo)
 
 	return ctrl.Result{}, nil
@@ -381,12 +392,33 @@ func (r *HelmRepoReconciler) repoCallBack(chart *utils.CommonChartVersion, err e
 // SetupWithManager sets up the controller with the Manager.
 func (r *HelmRepoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&helmopsv1alpha1.HelmRepo{}).
+		For(&helmopsv1alpha1.HelmRepo{}).WithEventFilter(predicate.Funcs{
+		CreateFunc: func(event event.CreateEvent) bool {
+			return true
+		},
+		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+			// only spec change do update event
+			oldObject, oldOk := updateEvent.ObjectOld.(*helmopsv1alpha1.HelmRepo)
+			newObject, newOk := updateEvent.ObjectNew.(*helmopsv1alpha1.HelmRepo)
+			if !oldOk || !newOk {
+				return false
+			}
+			if reflect.DeepEqual(oldObject.Spec, newObject.Spec) {
+				return false
+			}
+			return true
+		},
+		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+			return true
+		},
+	}).
 		Complete(r)
 }
 
 //removeFinalizer Stop the job ,do not delete installed helm release
 func (r *HelmRepoReconciler) removeFinalizer(ctx context.Context, helmRepo *helmopsv1alpha1.HelmRepo) error {
+	l := r.Log.WithValues("RepoName", helmRepo.Name, "Namespace", helmRepo.Namespace)
+	l.Info("start repo finalizer")
 	repoInfo, ok := repoCache.Load(helmRepo.Name)
 	if !ok {
 		return nil
