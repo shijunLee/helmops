@@ -138,12 +138,13 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
+	currentCtx := ctrl.SetupSignalHandler()
 	// add helm repo process while mgr is started
 	helmRepoProcess := controllers.NewRepoUpdate(helmRepoReconciler)
 	mgr.Add(helmRepoProcess)
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	go helmRepoReconciler.DoRepoJobs(currentCtx)
+	if err := mgr.Start(currentCtx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

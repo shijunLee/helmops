@@ -1,6 +1,8 @@
 package chartmuseum
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -83,7 +85,12 @@ func (c *ChartMuseum) GetChartVersionUrl(chartName, chartVersion string) (url, p
 	if versions, ok := chartVersions[chartName]; ok {
 		for _, item := range versions {
 			if item.Version == chartVersion {
-				return item.URLs[0], "http", nil
+				var chartURL = item.URLs[0]
+				if strings.HasPrefix(strings.ToLower(chartURL), "http") {
+					return chartURL, "http", nil
+				}
+				chartURL = fmt.Sprintf("%s/%s", c.repoOptions.RepoURL, chartURL)
+				return chartURL, "http", nil
 			}
 		}
 	} else {

@@ -71,7 +71,8 @@ type syncUpdateHelmRelease struct {
 }
 
 var (
-	repoCache = &sync.Map{}
+	repoCache    = &sync.Map{}
+	repoSyncChan = make(chan *charts.ChartRepo)
 )
 
 func NewHelmRepoReconciler(mgr ctrl.Manager, period, maxConcurrentReconciles int, jitterPeriod time.Duration, localCachePath string) *HelmRepoReconciler {
@@ -339,18 +340,18 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return ctrl.Result{}, err
 		}
 	}
-	repo, ok := repoCache.Load(helmRepo.Name)
+	repoCacheItem, ok := repoCache.Load(helmRepo.Name)
 	if ok {
-		chartRepo, ok := repo.(*charts.ChartRepo)
+		chartRepo, ok := repoCacheItem.(*charts.ChartRepo)
 		if ok {
 			chartRepo.Close()
 		}
 		repoCache.Delete(helmRepo.Name)
 	}
-	repo, err = charts.NewChartRepo(helmRepo.Name,
+	repo, err := charts.NewChartRepo(helmRepo.Name,
 		string(helmRepo.Spec.RepoType), helmRepo.Spec.RepoURL, helmRepo.Spec.Username,
 		helmRepo.Spec.Password, helmRepo.Spec.GitAuthToken, helmRepo.Spec.GitBranch,
-		r.LocalCachePath, helmRepo.Spec.InsecureSkipTLS, r.Period, r.repoCallBack)
+		r.LocalCachePath, helmRepo.Spec.InsecureSkipTLS, r.Period)
 	if err != nil {
 		l.Error(err, "create repo error", "ResourceName", req.Name)
 		return ctrl.Result{RequeueAfter: time.Second * 5}, err
@@ -358,7 +359,7 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	l.Info("store repo in local cache", "RepoName", helmRepo.Name)
 	repoCache.Store(helmRepo.Name, repo)
-
+	repoSyncChan <- repo
 	return ctrl.Result{}, nil
 }
 
@@ -366,6 +367,7 @@ func (r *HelmRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *HelmRepoReconciler) repoCallBack(chart *utils.CommonChartVersion, err error) {
 	if err != nil {
 		r.Log.Error(err, "repo sybc call back return error")
+		return
 	}
 	var operationList = &helmopsv1alpha1.HelmOperationList{}
 	err = r.List(context.Background(), operationList)
@@ -385,6 +387,17 @@ func (r *HelmRepoReconciler) repoCallBack(chart *utils.CommonChartVersion, err e
 				ChartVersion: chart.Version,
 				ReleaseName:  item.Name,
 			})
+		}
+	}
+}
+
+func (r *HelmRepoReconciler) DoRepoJobs(ctx context.Context) {
+	for {
+		select {
+		case repo := <-repoSyncChan:
+			go repo.StartTimerJobs(r.repoCallBack)
+		case <-ctx.Done():
+			return
 		}
 	}
 }
