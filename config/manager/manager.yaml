@@ -32,9 +32,9 @@ spec:
         image: controller:latest
         name: manager
         env:
-        - name: HELM_REPOSITORY_CONFIG
+        - name: HELM_CONFIG_HOME
           value: /helm/config
-        - name: HELM_REPOSITORY_CACHE
+        - name: HELM_CACHE_HOME
           value: /helm/cache
         securityContext:
           allowPrivilegeEscalation: false
@@ -52,8 +52,8 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: 100m
-            memory: 30Mi
+            cpu: 1000m
+            memory: 1000Mi
           requests:
             cpu: 100m
             memory: 20Mi

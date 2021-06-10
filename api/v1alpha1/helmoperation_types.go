@@ -103,7 +103,7 @@ type Upgrade struct {
 	WaitForJobs bool `json:"waitForJobs,omitempty"`
 
 	// is upgrade CRD when upgrade the helm release
-	UpgradeCRDs bool `json:"UpgradeCRDs,omitempty"`
+	UpgradeCRDs bool `json:"upgradeCRDs,omitempty"`
 }
 
 //Create the helm chart create options

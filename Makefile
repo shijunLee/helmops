@@ -101,8 +101,6 @@ docker-build: test ## Build docker image with the manager.
 	docker build --build-arg TAG="$(TAG)" \
 	--build-arg BRANCH="$(BRANCH)" \
 	--build-arg COMMIT_ID="$(COMMIT_ID)" \
-	--build-arg USERNAME="$(USERNAME)" \
-	--build-arg PASSWORD="$(PASSWORD)" \
 	--build-arg BUILD_TIME="$(BUILD_TIME)" -t ${IMG} .
 
 docker-push: ## Push docker image with the manager.

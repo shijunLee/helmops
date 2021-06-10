@@ -230,9 +230,6 @@ spec:
               upgrade:
                 description: Upgrade the chart upgrade options
                 properties:
-                  UpgradeCRDs:
-                    description: is upgrade CRD when upgrade the helm release
-                    type: boolean
                   atomic:
                     description: Atomic, if true, will roll back on failure.
                     type: boolean
@@ -292,6 +289,9 @@ spec:
                     description: Timeout is the timeout for this operation
                     format: int64
                     type: integer
+                  upgradeCRDs:
+                    description: is upgrade CRD when upgrade the helm release
+                    type: boolean
                   wait:
                     description: Wait determines whether the wait operation should
                       be performed after the upgrade is requested.

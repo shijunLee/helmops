@@ -18,8 +18,6 @@ ARG TAG
 ARG BRANCH
 ARG BUILD_TIME
 ARG COMMIT_ID 
-ARG USERNAME
-ARG PASSWORD
 # Build
 RUN FLAGS=`echo "-X github.com/shijunLee/helmops/pkg/version.CommitId=${COMMIT_ID} -X github.com/shijunLee/helmops/pkg/version.Branch=${BRANCH} -X github.com/shijunLee/helmops/pkg/version.Tag=${TAG} -X github.com/shijunLee/helmops/pkg/version.BuildTime=${BUILD_TIME}"` && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -ldflags "$FLAGS" -o manager main.go

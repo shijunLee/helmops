@@ -1,7 +1,0 @@
-apiVersion: helmops.shijunlee.net/v1alpha1
-kind: HelmOperationControllerReversion
-metadata:
-  name: helmoperationcontrollerreversion-sample
-spec:
-  # Add fields here
-  foo: bar

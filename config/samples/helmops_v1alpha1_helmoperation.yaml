@@ -1,7 +1,47 @@
 apiVersion: helmops.shijunlee.net/v1alpha1
 kind: HelmOperation
 metadata:
-  name: helmoperation-sample
+  name: log-test
 spec:
   # Add fields here
-  foo: bar
+  values: {}
+  autoUpdate: false
+  chartRepoName: tpaas-itg
+  chartVersion: 0.1.0
+  chartName: log-test
+  create:
+    description: "create a log test"
+    skipCRDs: false
+    timeout: 5m
+    noHook: false
+    generateName: false
+    createNamespace: false
+    disableOpenAPIValidation: false
+    isUpgrade: false
+    waitForJobs: false
+    replace: false
+    wait: false
+  upgrade: 
+    install: false
+    devel: false
+    skipCRDs: false
+    timeout: 5m
+    wait: false
+    disableHooks: false
+    force: false
+    resetValues: false
+    reuseValues: true
+    recreate: false
+    maxHistory: 10
+    atomic: true
+    cleanupOnFail: false
+    description: "upgrade a log test"
+    disableOpenAPIValidation: false
+    waitForJobs: false
+    upgradeCRDs: false
+  uninstall: 
+    disableHooks: false
+    keepHistory: false
+    timeout: 5m
+    description: "delete a log test"
+    doNotDeleteRelease: false
