@@ -73,8 +73,8 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 	if helmOperation.DeletionTimestamp.IsZero() {
-		log.Info("operation cr not add finalizer start add inalizer")
 		if !controllerutil.ContainsFinalizer(helmOperation, helmOperationFinalizer) {
+			log.Info("operation cr not add finalizer start add inalizer")
 			controllerutil.AddFinalizer(helmOperation, helmOperationFinalizer)
 			err = r.Client.Update(ctx, helmOperation)
 			if err != nil {
@@ -104,7 +104,6 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		if err == driver.ErrReleaseNotFound {
 			notCreate = true
-
 		}
 	}
 	log.Info("get release install info", "IsCreate", notCreate)
@@ -202,7 +201,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		var installChartVersion = release.Chart.Metadata.Version
 		// if version change or value changes do update process
 		if (helmOperation.Spec.ChartVersion != installChartVersion && helmOperation.Status.CurrentChartVersion != installChartVersion) ||
-			!reflect.DeepEqual(values, helmOperation.Spec.Values.Object) {
+			(!reflect.DeepEqual(values, helmOperation.Spec.Values.Object) && len(helmOperation.Spec.Values.Object) > 0) {
 			// if the installed helm release chart version great the the operation, update operation version and return
 			if utils.GetVersionGreaterThan(installChartVersion, helmOperation.Status.CurrentChartVersion) {
 				helmOperation.Status.CurrentChartVersion = installChartVersion
@@ -246,6 +245,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				ChartOpts:                &chart,
 				KubernetesOptions:        actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
 				UpgradeCRDs:              updateConfig.UpgradeCRDs,
+				ReleaseName:              helmOperation.Name,
 			}
 			release, err = updateOption.Run()
 			if err != nil {
