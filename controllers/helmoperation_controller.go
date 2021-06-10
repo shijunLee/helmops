@@ -200,6 +200,7 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		var values = release.Config
 		var installChartVersion = release.Chart.Metadata.Version
 		// if version change or value changes do update process
+		//TODO: this logic has bugs need to fix
 		if (helmOperation.Spec.ChartVersion != installChartVersion && helmOperation.Status.CurrentChartVersion != installChartVersion) ||
 			(!reflect.DeepEqual(values, helmOperation.Spec.Values.Object) && len(helmOperation.Spec.Values.Object) > 0) {
 			// if the installed helm release chart version great the the operation, update operation version and return
