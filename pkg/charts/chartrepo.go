@@ -9,6 +9,7 @@ import (
 	"github.com/shijunLee/helmops/pkg/charts/chartmuseum"
 	git "github.com/shijunLee/helmops/pkg/charts/git"
 	"github.com/shijunLee/helmops/pkg/helm/utils"
+	"github.com/shijunLee/helmops/pkg/log"
 )
 
 var (
@@ -65,6 +66,7 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 
 	}
 	if err != nil {
+		log.GlobalLog.Error(err, "create repo return error")
 		return nil, err
 	}
 	c := &ChartRepo{

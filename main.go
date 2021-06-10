@@ -20,21 +20,20 @@ import (
 	"flag"
 	"os"
 	"time"
+	//+kubebuilder:scaffold:imports
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	"github.com/shijunLee/helmops/controllers"
-	//+kubebuilder:scaffold:imports
+	helmopslog "github.com/shijunLee/helmops/pkg/log"
 )
 
 var (
@@ -74,7 +73,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
+	helmopslog.GlobalLog = ctrl.Log.WithName("globalLog")
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,

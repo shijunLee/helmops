@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: helm-ops
-  newTag: 0.0.1-02a4cf7501a9a578df587636050e990ccfb010d3
+  newTag: 0.0.1-d17db80

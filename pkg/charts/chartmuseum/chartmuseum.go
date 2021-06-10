@@ -8,6 +8,7 @@ import (
 
 	"github.com/shijunLee/helmops/pkg/helm/actions"
 	"github.com/shijunLee/helmops/pkg/helm/utils"
+	"github.com/shijunLee/helmops/pkg/log"
 )
 
 var (
@@ -42,10 +43,12 @@ func NewChartMuseum(url, username, password, repoName string, insecureSkipTLS bo
 	c.repoOptions = repoOptions
 	err := c.addLocalRepo()
 	if err != nil {
+		log.GlobalLog.Error(err, "add log repo error")
 		return nil, err
 	}
 	_, err = c.loadIndex()
 	if err != nil {
+		log.GlobalLog.Error(err, "load repo index error")
 		return nil, err
 	}
 	return c, nil
