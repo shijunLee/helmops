@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 	"time"
+
 	//+kubebuilder:scaffold:imports
 
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -73,7 +74,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-	helmopslog.GlobalLog = ctrl.Log.WithName("globalLog")
+	helmopslog.GlobalLog = ctrl.Log
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,

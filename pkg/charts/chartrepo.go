@@ -66,7 +66,7 @@ func NewChartRepo(name, repoType, url, username, password, token, branch, localC
 
 	}
 	if err != nil {
-		log.GlobalLog.Error(err, "create repo return error")
+		log.GlobalLog.WithName("chartRepo").Error(err, "create repo return error")
 		return nil, err
 	}
 	c := &ChartRepo{

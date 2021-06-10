@@ -31,6 +31,11 @@ spec:
         - --leader-elect
         image: controller:latest
         name: manager
+        env:
+        - name: HELM_REPOSITORY_CONFIG
+          value: /helm/config
+        - name: HELM_REPOSITORY_CACHE
+          value: /helm/cache
         securityContext:
           allowPrivilegeEscalation: false
         livenessProbe:
@@ -52,5 +57,15 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        volumeMounts:
+          - mountPath: /helm/config
+            name: helm-config
+          - mountPath: /helm/cache
+            name: helm-cache
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: helm-config
+          emptyDir: {}
+        - name: helm-cache
+          emptyDir: {}

@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/shijunLee/helmops/pkg/helm/utils"
+	"github.com/shijunLee/helmops/pkg/log"
 )
 
 // RepoOptions helm repo info
@@ -289,9 +290,12 @@ func (r *RepoOptions) ChartRepoToLocal(isForceUpdate bool) error {
 	o.certFile = r.CertFile
 	o.keyFile = r.KeyFile
 	o.forceUpdate = isForceUpdate
+	log.GlobalLog.WithName("chartmuseum-chartrepotolocal").Info("repo config setting address", "RepositoryConfigDir", o.repoFile)
+	log.GlobalLog.WithName("chartmuseum-chartrepotolocal").Info("repo cache setting address", "RepositoryConfigDir", o.repoCache)
 	// Ensure the file directory exists as it is required for file locking
 	err := os.MkdirAll(filepath.Dir(o.repoFile), os.ModePerm)
 	if err != nil && !os.IsExist(err) {
+		log.GlobalLog.WithName("chartmuseum-chartrepotolocal").Error(err, "make dir error")
 		return err
 	}
 
@@ -304,6 +308,7 @@ func (r *RepoOptions) ChartRepoToLocal(isForceUpdate bool) error {
 		defer fileLock.Unlock()
 	}
 	if err != nil {
+		log.GlobalLog.WithName("chartmuseum-chartrepotolocal").Error(err, "create cache file error")
 		return err
 	}
 
