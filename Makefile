@@ -5,9 +5,10 @@
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= $(shell cat ./pkg/version/version.go|grep "version ="|awk '{print $$3}'| tr "\n" " " | sed 's/\"//g' | sed 's/[[:space:]]//g' )
 TAG ?= $(shell git describe --abbrev=0 --tags)
-BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
-COMMIT_ID = $(shell git rev-parse HEAD)
-BUILD_TIME= $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
+BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
+COMMIT_ID ?= $(shell git rev-parse HEAD)
+BUILD_TIME ?= $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
+COMMIT_ID_SHORT ?= $(shell git rev-parse --short HEAD)
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -39,7 +40,7 @@ IMAGE_TAG_BASE ?= shijunlee.net/helmops
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= helm-ops:$(VERSION)-$(COMMIT_ID)
+IMG ?= helm-ops:$(VERSION)-$(COMMIT_ID_SHORT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 

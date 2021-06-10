@@ -1,7 +1,12 @@
 apiVersion: helmops.shijunlee.net/v1alpha1
 kind: HelmRepo
 metadata:
-  name: helmrepo-sample
+  name: tpaas-itg
 spec:
   # Add fields here
-  foo: bar
+  repoType: ChartMuseum
+  repoURL: https://tpaas-chartrepo-itg.jdcloud.com/chartrepo
+  username: lisj
+  password: Lee@013859
+  insecureSkipTLS: false 
+

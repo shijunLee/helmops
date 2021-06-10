@@ -26,7 +26,15 @@ RUN FLAGS=`echo "-X github.com/shijunLee/helmops/pkg/version.CommitId=${COMMIT_I
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM lishijun01/distroless:nonroot
+#FROM lishijun01/distroless:nonroot
+FROM  alpine:3.13
+RUN  sed -i 's!http://dl-cdn.alpinelinux.org/!https://mirrors.ustc.edu.cn/!g' /etc/apk/repositories && \
+     apk --no-cache add tzdata  musl openssl  vim  net-tools busybox-extras curl wget bind-tools && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    apk add --no-cache ca-certificates && \
+    update-ca-certificates
+
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
