@@ -4,7 +4,6 @@
 resources:
 - bases/helmops.shijunlee.net_helmrepos.yaml
 - bases/helmops.shijunlee.net_helmoperations.yaml
-- bases/helmops.shijunlee.net_helmoperationcontrollerreversions.yaml
 - bases/helmops.shijunlee.net_helmapplications.yaml
 - bases/helmops.shijunlee.net_helmcomponents.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
@@ -14,16 +13,14 @@ patchesStrategicMerge:
 # patches here are for enabling the conversion webhook for each CRD
 #- patches/webhook_in_helmrepos.yaml
 #- patches/webhook_in_helmoperations.yaml
-#- patches/webhook_in_helmoperationcontrollerreversions.yaml
 #- patches/webhook_in_helmapplications.yaml
 #- patches/webhook_in_helmcomponents.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable webhook, uncomment all the sections with [CERTMANAGER] prefix.
 # patches here are for enabling the CA injection for each CRD
-#- patches/cainjection_in_helmrepos.yaml
+- patches/cainjection_in_helmrepos.yaml
 #- patches/cainjection_in_helmoperations.yaml
-#- patches/cainjection_in_helmoperationcontrollerreversions.yaml
 #- patches/cainjection_in_helmapplications.yaml
 #- patches/cainjection_in_helmcomponents.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch

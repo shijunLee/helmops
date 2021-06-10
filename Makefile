@@ -3,8 +3,11 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.1
-
+VERSION ?= $(shell cat ./pkg/version/version.go|grep "version ="|awk '{print $$3}'| tr "\n" " " | sed 's/\"//g' | sed 's/[[:space:]]//g' )
+TAG ?= $(shell git describe --abbrev=0 --tags)
+BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
+COMMIT_ID = $(shell git rev-parse HEAD)
+BUILD_TIME= $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -36,7 +39,7 @@ IMAGE_TAG_BASE ?= shijunlee.net/helmops
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= helm-ops:$(VERSION)-$(COMMIT_ID)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
@@ -94,7 +97,12 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build --build-arg TAG="$(TAG)" \
+	--build-arg BRANCH="$(BRANCH)" \
+	--build-arg COMMIT_ID="$(COMMIT_ID)" \
+	--build-arg USERNAME="$(USERNAME)" \
+	--build-arg PASSWORD="$(PASSWORD)" \
+	--build-arg BUILD_TIME="$(BUILD_TIME)" -t ${IMG} .
 
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
