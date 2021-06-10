@@ -238,7 +238,7 @@ func (r *HelmOperationReconciler) removeFinalizer(ctx context.Context, operation
 		return nil
 	}
 	uninstallConfig := operation.Spec.Uninstall
-	uninstall := actions.UninstallOptions{
+	uninstall := &actions.UninstallOptions{
 		Description:       uninstallConfig.Description,
 		KeepHistory:       uninstallConfig.KeepHistory,
 		Timeout:           uninstallConfig.Timeout,
@@ -247,7 +247,19 @@ func (r *HelmOperationReconciler) removeFinalizer(ctx context.Context, operation
 		ReleaseName:       operation.Name,
 		KubernetesOptions: actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
 	}
-	_, err := uninstall.Run()
+	getConfig := &actions.GetOptions{
+		Namespace:         operation.Namespace,
+		ReleaseName:       operation.Name,
+		KubernetesOptions: actions.NewKubernetesClient(actions.WithRestConfig(r.RestConfig)),
+	}
+	_, err := getConfig.Run()
+	if err != nil {
+		if driver.ErrReleaseNotFound == err {
+			return nil
+		}
+		return err
+	}
+	_, err = uninstall.Run()
 	if err != nil {
 		return err
 	}
