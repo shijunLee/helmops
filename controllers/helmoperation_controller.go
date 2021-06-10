@@ -102,11 +102,12 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	var notCreate = false
 	release, err := getOptions.Run()
 	if err != nil {
-		if err == driver.ErrReleaseNotFound {
+		if actions.IsReleaseNotFound(err) || err == driver.ErrReleaseNotFound {
 			notCreate = true
+		} else {
+			log.Error(err, "get helm release error")
+			return ctrl.Result{}, err
 		}
-		log.Error(err, "get helm release error")
-		return ctrl.Result{}, err
 	}
 	log.Info("get release install info", "IsCreate", notCreate)
 	chartOptions := &actions.ChartOpts{

@@ -21,3 +21,7 @@ func (i *GetOptions) Run() (*release.Release, error) {
 	getConfig.Version = i.Version
 	return getConfig.Run(i.ReleaseName)
 }
+
+func IsReleaseNotFound(err error) bool {
+	return err.Error() == "release: not found"
+}
