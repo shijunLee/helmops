@@ -2,11 +2,13 @@ package utils
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 
 	"github.com/Masterminds/semver/v3"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+
+	"github.com/shijunLee/helmops/pkg/log"
 )
 
 //DownloadChart download helm chart to local cache folder
@@ -29,6 +31,8 @@ func DownloadChartWithTLS(chartUrl, username, password string,
 
 //DownloadChartArchive download chart Archive and get chart Archive bytes buffer
 func DownloadChartArchive(chartUrl, username, password string, caPath, certPath, privateKeyPath string, insecureSkipTLSVerify bool) (*bytes.Buffer, error) {
+	log.GlobalLog.WithName("charts-downloadChartArchive").Info("start download chart archive", "ChartUrl",
+		chartUrl, "UserName", username, "Password", password, "insecureSkipTLSVerify", insecureSkipTLSVerify)
 	var opts []HttpRequestOptions
 	if username != "" && password != "" {
 		opts = append(opts, WithBasicAuth(username, password))
@@ -45,7 +49,7 @@ func DownloadChartArchive(chartUrl, username, password string, caPath, certPath,
 	}
 	if stateCode > 400 {
 		//todo if 401 return add token support
-		return nil, errors.New("download chart return 401 from repo")
+		return nil, fmt.Errorf("download chart return %d from repo", stateCode)
 	}
 	return bytes.NewBuffer(data), nil
 }

@@ -151,6 +151,10 @@ func (r *HelmOperationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		// InsecureSkipTLSVerify skip tls certificate checks for the chart download
 		InsecureSkipTLSVerify: chartRepo.InsecureSkipTLS,
 	}
+	chartOptions.AuthInfo = actions.AuthInfo{
+		Username: chartRepo.Username,
+		Password: chartRepo.Password,
+	}
 	switch pathType {
 	case "file":
 		chartOptions.LocalPath = url
