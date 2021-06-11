@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -62,6 +63,7 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 		return admission.Allowed("not need to process")
 	}
 	var secrets = map[string]string{}
+	var dockerSecrets = []corev1.Secret{}
 	for _, item := range secretConfigs {
 		secretItem := &corev1.Secret{}
 		err := a.Client.Get(context.TODO(), types.NamespacedName{
@@ -75,6 +77,7 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 			if secretItem.Type == corev1.SecretTypeDockerConfigJson {
 				secretData, ok := secretItem.Data[corev1.DockerConfigJsonKey]
 				if ok {
+					dockerSecrets = append(dockerSecrets, *secretItem)
 					var dockerSecret = &DockerSecret{}
 					err := json.Unmarshal(secretData, dockerSecret)
 					if err == nil {
@@ -110,6 +113,22 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 		}
 		if !contain {
 			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: item})
+
+			for _, secret := range dockerSecrets {
+				if secret.Name == item {
+					if secret.Namespace != pod.Namespace {
+						var cloneSecret = secret
+						cloneSecret.ObjectMeta = metav1.ObjectMeta{}
+						cloneSecret.Namespace = pod.Namespace
+						cloneSecret.Name = pod.Name
+						err = a.Client.Create(context.TODO(), &cloneSecret)
+						if err != nil {
+							podlog.Error(err, "clone create secret config error")
+							continue
+						}
+					}
+				}
+			}
 		}
 	}
 	marshaledPod, err := json.Marshal(pod)
