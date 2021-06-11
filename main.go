@@ -58,12 +58,14 @@ func main() {
 	var localCachePath string
 	var maxConcurrentReconciles int
 	var jitterPeriod int
+	var dockerConfigMapName string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.IntVar(&period, "repo-period", 30, "the period for helm repo sync")
 	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-sync-reconciles", 1, "the max concurrent sync reconciles")
 	flag.IntVar(&jitterPeriod, "jitter-period", 0, "the jitter period for helm release update process")
 	flag.StringVar(&localCachePath, "local-cache-path", "/tmp", "the git cache local path for helm repo.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&dockerConfigMapName, "docker-secret-configmap-name", "helm-ops-image-inject-configmap", "The configMap save docker image secret auto inject config.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -109,6 +111,11 @@ func main() {
 	}
 	if err = (&helmopsv1alpha1.HelmOperation{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "HelmOperation")
+		os.Exit(1)
+	}
+
+	if err = (&helmopsv1alpha1.PodWebHook{}).SetupWebhookWithManager(mgr, dockerConfigMapName); err != nil {
+		setupLog.Error(err, "unable to create pod webhook", "webhook", "Pod")
 		os.Exit(1)
 	}
 

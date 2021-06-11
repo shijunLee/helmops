@@ -34,8 +34,8 @@ var mgrClient client.Client
 // log is for logging in this package.
 var podlog = logf.Log.WithName("pod-resource")
 
-func (r *PodWebHook) SetupWebhookWithManager(mgr ctrl.Manager, dockerSecretConfigMapName string) error {
-	dockerSecretConfigMapName = dockerSecretConfigMapName
+func (r *PodWebHook) SetupWebhookWithManager(mgr ctrl.Manager, dockerConfigMapName string) error {
+	dockerSecretConfigMapName = dockerConfigMapName
 	mgrClient = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&corev1.Pod{}).
@@ -126,7 +126,7 @@ func (r *PodWebHook) Default() {
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-helmops-shijunlee-net-v1alpha1-helmrepo,mutating=false,failurePolicy=fail,sideEffects=None,groups=helmops.shijunlee.net,resources=helmrepos,verbs=create;update,versions=v1alpha1,name=vhelmrepo.kb.io,admissionReviewVersions={v1,v1beta1}
+//+kubebuilder:webhook:path=/validate-helmops-shijunlee-net-v1alpha1-helmrepo,mutating=false,failurePolicy=fail,sideEffects=None,groups=helmops.shijunlee.net,resources=helmrepos,verbs=create;update,versions=v1alpha1,name=vpod.kb.io,admissionReviewVersions={v1,v1beta1}
 
 var _ webhook.Validator = &PodWebHook{}
 

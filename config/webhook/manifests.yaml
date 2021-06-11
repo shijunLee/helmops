@@ -128,7 +128,7 @@ webhooks:
       namespace: system
       path: /validate-helmops-shijunlee-net-v1alpha1-helmrepo
   failurePolicy: Fail
-  name: vhelmrepo.kb.io
+  name: vpod.kb.io
   rules:
   - apiGroups:
     - helmops.shijunlee.net
