@@ -48,6 +48,27 @@ webhooks:
     resources:
     - helmrepos
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-helmops-shijunlee-net-v1alpha1-podwebhook
+  failurePolicy: Fail
+  name: mpods.kb.io
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pods
+  sideEffects: None
 
 ---
 apiVersion: admissionregistration.k8s.io/v1
@@ -76,6 +97,27 @@ webhooks:
     - UPDATE
     resources:
     - helmoperations
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-helmops-shijunlee-net-v1alpha1-helmrepo
+  failurePolicy: Fail
+  name: vhelmrepo.kb.io
+  rules:
+  - apiGroups:
+    - helmops.shijunlee.net
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - helmrepos
   sideEffects: None
 - admissionReviewVersions:
   - v1
