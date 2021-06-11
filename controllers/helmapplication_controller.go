@@ -25,27 +25,24 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/json"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/Masterminds/sprig/v3"
-	"github.com/pkg/errors"
-	"github.com/shijunLee/helmops/pkg/cue"
-	"github.com/shijunLee/helmops/pkg/helm/utils"
-	"github.com/thedevsaddam/gojsonq"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"github.com/thedevsaddam/gojsonq"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"github.com/shijunLee/helmops/pkg/cue"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 const (

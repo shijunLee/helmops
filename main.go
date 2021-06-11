@@ -20,7 +20,6 @@ import (
 	"flag"
 	"os"
 	"time"
-
 	//+kubebuilder:scaffold:imports
 
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -31,6 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	"github.com/shijunLee/helmops/controllers"
@@ -114,10 +114,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&helmopsv1alpha1.PodWebHook{}).SetupWebhookWithManager(mgr, dockerConfigMapName); err != nil {
-		setupLog.Error(err, "unable to create pod webhook", "webhook", "Pod")
-		os.Exit(1)
+	var podPullSecretInject = &helmopsv1alpha1.PodPullSecretInject{
+		Client:                    mgr.GetClient(),
+		DockerSecretConfigMapName: dockerConfigMapName,
 	}
+	mgr.GetWebhookServer().Register("/mutate-v1-pod-pullsecretinject", &webhook.Admission{Handler: podPullSecretInject})
 
 	if err = (&controllers.HelmApplicationReconciler{
 		Client: mgr.GetClient(),
