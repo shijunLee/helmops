@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -113,16 +115,22 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 		}
 		if !contain {
 			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: item})
-
 			for _, secret := range dockerSecrets {
 				if secret.Name == item {
-					if secret.Namespace != pod.Namespace {
+					namespace := pod.Namespace
+					if namespace == "" {
+						namespace = "default"
+					}
+					cloneSecretItem := &corev1.Secret{}
+					err = a.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: namespace}, cloneSecretItem)
+					if (err != nil && !k8serrors.IsNotFound(err)) || err == nil {
+						continue
+					}
+					podlog.Info("start clone secret", "Name", secret.Name, "Namespace", namespace)
+					if secret.Namespace != namespace {
 						var cloneSecret = secret
 						cloneSecret.ObjectMeta = metav1.ObjectMeta{}
-						cloneSecret.Namespace = pod.Namespace
-						if cloneSecret.Namespace == "" {
-							cloneSecret.Namespace = "default"
-						}
+						cloneSecret.Namespace = namespace
 						cloneSecret.Name = pod.Name
 						err = a.Client.Create(context.TODO(), &cloneSecret)
 						if err != nil {

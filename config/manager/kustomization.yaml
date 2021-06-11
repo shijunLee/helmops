@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: docker.shijunlee.local/library/helm-ops
-  newTag: 0.0.1-edef2bd
+  newTag: 0.0.1-9d09958
