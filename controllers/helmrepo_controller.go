@@ -416,13 +416,8 @@ func (r *HelmRepoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			if !oldOk || !newOk {
 				return false
 			}
-			if reflect.DeepEqual(oldObject.Spec, newObject.Spec) {
-				if !newObject.DeletionTimestamp.IsZero() {
-					return true
-				}
-				return false
-			}
-			return true
+			return !(reflect.DeepEqual(oldObject.Spec, newObject.Spec) &&
+				reflect.DeepEqual(oldObject.ObjectMeta, newObject.ObjectMeta))
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
 			return true
