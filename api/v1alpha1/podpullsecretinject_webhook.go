@@ -131,7 +131,7 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 						var cloneSecret = secret
 						cloneSecret.ObjectMeta = metav1.ObjectMeta{}
 						cloneSecret.Namespace = namespace
-						cloneSecret.Name = pod.Name
+						cloneSecret.Name = item
 						err = a.Client.Create(context.TODO(), &cloneSecret)
 						if err != nil {
 							podlog.Error(err, "clone create secret config error")
