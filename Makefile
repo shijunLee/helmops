@@ -38,9 +38,9 @@ IMAGE_TAG_BASE ?= shijunlee.net/helmops
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
-
+IMAGE_HOST_BASE ?= ""
 # Image URL to use all building/pushing image targets
-IMG ?= helm-ops:$(VERSION)-$(COMMIT_ID_SHORT)
+IMG ?= ${IMAGE_HOST_BASE}helm-ops:$(VERSION)-$(COMMIT_ID_SHORT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 

@@ -73,22 +73,22 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 		if err != nil {
 			continue
 		}
-		if secretItem != nil {
-			if secretItem.Type == corev1.SecretTypeDockerConfigJson {
-				secretData, ok := secretItem.Data[corev1.DockerConfigJsonKey]
-				if ok {
-					dockerSecrets = append(dockerSecrets, *secretItem)
-					var dockerSecret = &DockerSecret{}
-					err := json.Unmarshal(secretData, dockerSecret)
-					if err == nil {
-						for k := range dockerSecret.Auths {
-							secrets[k] = secretItem.Name
-						}
+
+		if secretItem.Type == corev1.SecretTypeDockerConfigJson {
+			secretData, ok := secretItem.Data[corev1.DockerConfigJsonKey]
+			if ok {
+				dockerSecrets = append(dockerSecrets, *secretItem)
+				var dockerSecret = &DockerSecret{}
+				err := json.Unmarshal(secretData, dockerSecret)
+				if err == nil {
+					for k := range dockerSecret.Auths {
+						secrets[k] = secretItem.Name
 					}
 				}
 			}
 		}
 	}
+
 	if len(secrets) == 0 {
 		return admission.Allowed("not need to process")
 	}
@@ -120,6 +120,9 @@ func (a *PodPullSecretInject) Handle(ctx context.Context, req admission.Request)
 						var cloneSecret = secret
 						cloneSecret.ObjectMeta = metav1.ObjectMeta{}
 						cloneSecret.Namespace = pod.Namespace
+						if cloneSecret.Namespace == "" {
+							cloneSecret.Namespace = "default"
+						}
 						cloneSecret.Name = pod.Name
 						err = a.Client.Create(context.TODO(), &cloneSecret)
 						if err != nil {
