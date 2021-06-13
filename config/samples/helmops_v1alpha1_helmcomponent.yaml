@@ -4,4 +4,56 @@ metadata:
   name: helmcomponent-sample
 spec:
   # Add fields here
-  foo: bar
+  valuesTemplate: 
+    cue: |
+      parmater: {
+      }
+      output: {
+      }
+  autoUpdate: false
+  chartRepoName: tpaas-itg
+  chartVersion: 0.0.1
+  chartName: log-test
+  create:
+    description: "create a log test"
+    skipCRDs: false
+    timeout: 300
+    noHook: false
+    generateName: false
+    createNamespace: false
+    disableOpenAPIValidation: false
+    isUpgrade: false
+    waitForJobs: false
+    replace: false
+    wait: false
+  upgrade: 
+    install: false
+    devel: false
+    skipCRDs: false
+    timeout: 300
+    wait: false
+    disableHooks: false
+    force: false
+    resetValues: false
+    reuseValues: true
+    recreate: false
+    maxHistory: 10
+    atomic: true
+    cleanupOnFail: false
+    description: "upgrade a log test"
+    disableOpenAPIValidation: false
+    waitForJobs: false
+    upgradeCRDs: false
+  uninstall: 
+    disableHooks: false
+    keepHistory: false
+    timeout: 300
+    description: "delete a log test"
+    doNotDeleteRelease: false
+  stableStatus:
+    apiGroup: apps
+    version: v1
+    resource: Deployment
+    jsonPath: status.availableReplicas
+    valueJsonPath: status.replicas
+    

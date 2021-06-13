@@ -41,8 +41,6 @@ type HelmComponentSpec struct {
 	//ChartName the chart name which will install
 	ChartName string `json:"chartName,omitempty"`
 
-	WatchType string `json:"watchType,omitempty"`
-
 	// Create the chart create options
 	Create Create `json:"create,omitempty"`
 
@@ -141,7 +139,9 @@ type StableStatus struct {
 	//the resource name
 	Name string `json:"name,omitempty"`
 	// the stable value
-	Value string `json:"value,omitempty"`
+	Value *string `json:"value,omitempty"`
+	// the value json path for deployment or rs
+	ValueJsonPath *string `json:"valueJsonPath,omitempty"`
 }
 
 type ReturnValue struct {
