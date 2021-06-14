@@ -226,12 +226,14 @@ func (r *HelmApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 //getApplicationStepComponent get application install step use component
 func (r *HelmApplicationReconciler) getApplicationStepComponent(ctx context.Context, stepDef helmopsv1alpha1.ComponentStep) (*helmopsv1alpha1.HelmComponent, error) {
+	l := r.Log.WithValues("stepReleaseName", stepDef.ComponentReleaseName, "Component", stepDef.ComponentName)
 	if stepDef.ComponentName == "" {
 		return nil, errors.New("not define step component name")
 	}
 	var helmComponent = &helmopsv1alpha1.HelmComponent{}
 	err := r.Client.Get(ctx, types.NamespacedName{Namespace: utils.GetCurrentNameSpace(), Name: stepDef.ComponentReleaseName}, helmComponent)
 	if err != nil {
+		l.Error(err, "get helm component error")
 		return nil, err
 	}
 	return helmComponent, nil
