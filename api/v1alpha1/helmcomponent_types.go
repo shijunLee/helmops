@@ -54,7 +54,7 @@ type HelmComponentSpec struct {
 	StableStatus *StableStatus `json:"stableStatus,omitempty"`
 
 	// the component return value for  next helm component
-	ReturnValues []ReturnValue `json:"ReturnValues,omitempty"`
+	ReturnValues []ReturnValue `json:"returnValues,omitempty"`
 
 	// if this component is an operator , will get the operator is need install
 	Operator *Operator `json:"operator,omitempty"`
@@ -148,7 +148,7 @@ type ReturnValue struct {
 	Name          string   `json:"name"`
 	APIGroup      string   `json:"apiGroup,omitempty"`
 	Version       string   `json:"version,omitempty"`
-	Kind          string   `json:"resource,omitempty"`
+	Kind          string   `json:"kind,omitempty"`
 	JSONPaths     []string `json:"jsonPaths,omitempty"`
 	ValueTemplate string   `json:"valueTemplate,omitempty"`
 	ResourceName  string   `json:"resourceName,omitempty"`

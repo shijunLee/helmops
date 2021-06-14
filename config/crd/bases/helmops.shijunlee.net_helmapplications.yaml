@@ -62,9 +62,9 @@ spec:
                     parameters:
                       description: the component install params
                       items:
-                        description: ComponentParameter the component install param
-                          ,notice not both set value and ref ,if set will use value
-                          as default
+                        description: 'TODO: need add procees ComponentParameter the
+                          component install param ,notice not both set value and ref
+                          ,if set will use value as default'
                         properties:
                           name:
                             description: the parameter name

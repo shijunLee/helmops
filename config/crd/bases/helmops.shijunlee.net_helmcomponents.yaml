@@ -36,32 +36,6 @@ spec:
           spec:
             description: HelmComponentSpec defines the desired state of HelmComponent
             properties:
-              ReturnValues:
-                description: the component return value for  next helm component
-                items:
-                  properties:
-                    apiGroup:
-                      type: string
-                    joinSplit:
-                      type: string
-                    jsonPaths:
-                      items:
-                        type: string
-                      type: array
-                    name:
-                      type: string
-                    resource:
-                      type: string
-                    resourceName:
-                      type: string
-                    valueTemplate:
-                      type: string
-                    version:
-                      type: string
-                  required:
-                  - name
-                  type: object
-                type: array
               autoUpdate:
                 description: AutoUpdate is auto update for release
                 type: boolean
@@ -184,6 +158,32 @@ spec:
                 - version
                 - watchType
                 type: object
+              returnValues:
+                description: the component return value for  next helm component
+                items:
+                  properties:
+                    apiGroup:
+                      type: string
+                    joinSplit:
+                      type: string
+                    jsonPaths:
+                      items:
+                        type: string
+                      type: array
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    resourceName:
+                      type: string
+                    valueTemplate:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               stableStatus:
                 description: to get the helm release is running , if not set will
                   not wait for this job

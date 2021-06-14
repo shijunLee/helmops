@@ -20,14 +20,13 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 )
 
 const (
@@ -48,15 +47,16 @@ type HelmComponentReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *HelmComponentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("helmcomponent", req.NamespacedName)
+	l := r.Log.WithValues("helmcomponent", req.NamespacedName)
 
 	helmComponent := &helmopsv1alpha1.HelmComponent{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, helmComponent)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
+			l.Info("helm component not found")
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "find helm component resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
+		l.Error(err, "find helm component resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
 	if !helmComponent.DeletionTimestamp.IsZero() {
@@ -64,14 +64,21 @@ func (r *HelmComponentReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			controllerutil.AddFinalizer(helmComponent, helmComponentFinalizer)
 			err = r.Client.Update(ctx, helmComponent)
 			if err != nil {
+				l.Error(err, "update  helm component error for add finalizer")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		if err = r.removeFinalizer(ctx, helmComponent); err != nil {
+			l.Error(err, "remove finalizer for helm component error")
 			return ctrl.Result{}, err
 		}
 		controllerutil.RemoveFinalizer(helmComponent, helmRepoFinalizer)
+		err = r.Client.Update(ctx, helmComponent)
+		if err != nil {
+			l.Error(err, "update helm component error")
+			return ctrl.Result{}, err
+		}
 	}
 	// your logic here
 

@@ -86,6 +86,7 @@ type ComponentStep struct {
 	ValuesRefComponentRelease []string `json:"ValuesRefComponentRelease,omitempty"`
 }
 
+// TODO: need add procees
 // ComponentParameter the component install param ,notice not both set value and ref ,if set will use value as default
 type ComponentParameter struct {
 	// the parameter name
@@ -96,14 +97,6 @@ type ComponentParameter struct {
 
 	// the value type for parameter , will try to convert value to the set type not set will use default string
 	Type string `json:"type,omitempty"`
-}
-
-// RefParameter the parameter from the other component
-type RefParameter struct {
-	// the helm component Name
-	ComponentName string `json:"componentName,omitempty"`
-	// the helm component return date name define
-	ReturnDateName string `json:"returnDateName,omitempty"`
 }
 
 //+kubebuilder:object:root=true

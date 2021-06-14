@@ -28,6 +28,9 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"github.com/shijunLee/helmops/pkg/cue"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 	"github.com/thedevsaddam/gojsonq"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,10 +42,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
-	"github.com/shijunLee/helmops/pkg/cue"
-	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 const (
@@ -63,15 +62,16 @@ type HelmApplicationReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("helmapplication", req.NamespacedName)
+	l := r.Log.WithValues("helmapplication", req.NamespacedName)
 
 	helmApplication := &helmopsv1alpha1.HelmApplication{}
 	err := r.Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, helmApplication)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
+			l.Info("application not found")
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "find helm application resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
+		l.Error(err, "find helm application resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
 	if !helmApplication.DeletionTimestamp.IsZero() {
@@ -79,15 +79,23 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			controllerutil.AddFinalizer(helmApplication, helmApplicationFinalizer)
 			err = r.Client.Update(ctx, helmApplication)
 			if err != nil {
+				l.Error(err, "update helm application error")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		if err = r.removeFinalizer(ctx, helmApplication); err != nil {
+			l.Error(err, "remove finalizer error")
 			return ctrl.Result{}, err
 		}
 		controllerutil.RemoveFinalizer(helmApplication, helmRepoFinalizer)
+		err = r.Client.Update(ctx, helmApplication)
+		if err != nil {
+			l.Error(err, "update helm application error")
+			return ctrl.Result{}, err
+		}
 	}
+	l.Info("start application create")
 	// not define steps ,return not process
 	if len(helmApplication.Spec.Steps) == 0 {
 		return ctrl.Result{}, nil
@@ -99,14 +107,17 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err != nil {
 			// if component not found ,add status
 			if k8serrors.IsNotFound(err) {
+				l.Error(err, "step install component not found")
 				return ctrl.Result{}, nil
 			}
+			l.Error(err, "get step install component err")
 			return ctrl.Result{}, err
 		}
 		operator := cmp.Spec.Operator
 		if operator != nil {
 			isExist, err := r.checkOperatorIsExist(ctx, helmApplication.Namespace, cmp)
 			if err != nil {
+				l.Error(err, "check operator is exist error")
 				return ctrl.Result{}, err
 			}
 			// if operator is install do not install this step and do install others
@@ -118,53 +129,73 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		helmOperation, err := r.buildStepReleaseHelmOperation(ctx, helmApplication.Namespace, step, values)
 		if err != nil {
 			//TODO: update status for the application ,build operation failed
+			l.Error(err, "build helm operation error")
 			return ctrl.Result{}, nil
 		}
 		exist, opsObj, err := r.checkOperationIsExist(ctx, helmOperation)
 		if err != nil {
+			l.Error(err, "check operation is exist error")
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 		}
 		if !exist {
 			err = r.Client.Create(ctx, helmOperation)
 			if err != nil {
-				log.Error(err, "create helm operation return error")
+				l.Error(err, "create helm operation return error")
 				return ctrl.Result{}, err
 			}
+			l.Info("success create operation , return loop and wait 1 second")
 			return ctrl.Result{RequeueAfter: time.Second}, nil
 		} else {
 			// if spec not equal ,update helmOperation and wait 1 second
+			// TODO: is need get deepequal values string
 			if !reflect.DeepEqual(helmOperation.Spec, opsObj.Spec) {
+				l.Info("helm operation spec not same,need update")
 				opsObj.Spec = helmOperation.Spec
 				err = r.Client.Update(ctx, opsObj)
 				if err != nil {
-					log.Error(err, "create helm operation return error")
+					l.Error(err, "create helm operation return error")
 					return ctrl.Result{}, err
 				}
 				return ctrl.Result{RequeueAfter: time.Second}, nil
 			}
 		}
 		// do check componse status
+		l.Info("start watch step release ready")
 		isReady, err := r.watchStepReleaseReady(ctx, helmOperation, cmp)
 		if err != nil {
-			r.Log.Error(err, "get cmp is ready error")
+			l.Error(err, "get cmp is ready error")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 		if !isReady {
+			l.Info("release not ready,return loop and wait 1 second")
 			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 
+		l.Info("start get release return data")
 		data, err := r.getStepReleaseReturnData(ctx, helmOperation, cmp)
 		if err != nil {
-			r.Log.Error(err, "get return data error")
+			l.Error(err, "get return data error")
 			return ctrl.Result{}, err
 		}
 		// TODO: update step return data
 
 		values[step.ComponentReleaseName] = data
-
+		printReturnValues(l, values)
 	}
 
 	return ctrl.Result{}, nil
+}
+
+//printReturnValues print debug return data info
+func printReturnValues(log logr.Logger, data map[string]interface{}) {
+	if data == nil {
+		return
+	}
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		log.Error(err, "marshal data err")
+	}
+	log.Info("get return data", "DataInfo", string(dataBytes))
 }
 
 //checkOperationIsExist check operation is install or not
@@ -215,6 +246,7 @@ func (r *HelmApplicationReconciler) processOperatorHelmReleaseInstall(ctx contex
 
 //checkOperatorIsExist get the operator is install in the cluster
 func (r *HelmApplicationReconciler) checkOperatorIsExist(ctx context.Context, namespace string, helmComponent *helmopsv1alpha1.HelmComponent) (bool, error) {
+	l := r.Log.WithValues("helmapplication", namespace, "Component", helmComponent.Name)
 	operator := helmComponent.Spec.Operator
 	if operator == nil {
 		return true, nil
@@ -239,7 +271,7 @@ func (r *HelmApplicationReconciler) checkOperatorIsExist(ctx context.Context, na
 		// if selector convert failed ,return false , reinstall the operator
 		selecter, err := apimachinerymetav1.LabelSelectorAsSelector(operator.MatchLabels)
 		if err != nil {
-			r.Log.Error(err, "convert meta v1 match labels selector to apimachinery selector error")
+			l.Error(err, "convert meta v1 match labels selector to apimachinery selector error")
 			return false, err
 		}
 		listOpts := &client.ListOptions{LabelSelector: selecter}
@@ -331,9 +363,20 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 	}
 
 	data := gojsonq.New().FromString(string(jsonData)).Find(s.JSONPath)
+	r.Log.Info("jsonq get value from path info", "JsonPath", s.JSONPath, "DataInfo", data)
 	if data != nil {
-		if dataString, ok := data.(string); ok && dataString == s.Value {
-			return true, nil
+		if s.Value != nil {
+			if dataString, ok := data.(string); ok && dataString == *s.Value {
+				return true, nil
+			}
+		} else if s.ValueJsonPath != nil {
+			valueData := gojsonq.New().FromString(string(jsonData)).Find(*s.ValueJsonPath)
+			r.Log.Info("jsonq get value from path info", "ValueJsonPath", s.JSONPath, "ValueDataInfo", valueData)
+			if valueData != nil {
+				if data == valueData {
+					return true, nil
+				}
+			}
 		}
 	}
 

@@ -4,4 +4,12 @@ metadata:
   name: helmapplication-sample
 spec:
   # Add fields here
-  foo: bar
+  steps:
+  - componentName: helmcomponent-sample
+    componentReleaseName: helmops-test
+    checkIfExistNotInstall: false
+    parameters:
+      name: test
+      value: test2
+      type: string
+    ValuesRefComponentRelease: []
