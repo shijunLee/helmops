@@ -5,8 +5,8 @@ metadata:
 spec:
   # Add fields here
   repoType: ChartMuseum
-  repoURL: https://tpaas-chartrepo-itg.jdcloud.com/chartrepo
-  username: lisj
-  password: Lee@013859
+  repoURL: https://test.chartmuseum.local/chartrepo
+  username: harbor
+  password: Harbor@12345
   insecureSkipTLS: false 
 
