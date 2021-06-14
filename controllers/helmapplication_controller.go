@@ -231,7 +231,7 @@ func (r *HelmApplicationReconciler) getApplicationStepComponent(ctx context.Cont
 		return nil, errors.New("not define step component name")
 	}
 	var helmComponent = &helmopsv1alpha1.HelmComponent{}
-	err := r.Client.Get(ctx, types.NamespacedName{Namespace: utils.GetCurrentNameSpace(), Name: stepDef.ComponentReleaseName}, helmComponent)
+	err := r.Client.Get(ctx, types.NamespacedName{Namespace: utils.GetCurrentNameSpace(), Name: stepDef.ComponentName}, helmComponent)
 	if err != nil {
 		l.Error(err, "get helm component error")
 		return nil, err

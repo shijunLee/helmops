@@ -9,7 +9,7 @@ spec:
     componentReleaseName: helmops-test
     checkIfExistNotInstall: false
     parameters:
-      name: test
+    - name: test
       value: test2
       type: string
     ValuesRefComponentRelease: []

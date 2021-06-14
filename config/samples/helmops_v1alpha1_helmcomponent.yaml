@@ -5,11 +5,12 @@ metadata:
 spec:
   # Add fields here
   valuesTemplate: 
-    cue: |
-      parmater: {
-      }
-      output: {
-      }
+    cue: 
+      template: |
+        parmater: {
+        }
+        output: {
+        }
   autoUpdate: false
   chartRepoName: tpaas-itg
   chartVersion: 0.0.1
