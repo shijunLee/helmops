@@ -7,7 +7,7 @@ spec:
   valuesTemplate: 
     cue: 
       template: |
-        parmater: {
+        parameter: {
         }
         output: {
         }

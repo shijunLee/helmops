@@ -323,6 +323,7 @@ func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Co
 	var cueRef = cue.NewReleaseDef(stepDef.ComponentReleaseName, namespace,
 		helmComponent.Spec.ChartName, helmComponent.Spec.ChartVersion, helmComponent.Spec.ChartRepoName, false, nil,
 		helmComponent.Spec.ValuesTemplate.CUE.Template)
+	//TODO: add install upgrade and uninstall param to cue ref in here
 	return cueRef.BuildReleaseWorkload(refValues)
 }
 
