@@ -401,20 +401,6 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 		return false, err
 	}
 
-	if helmComponent.Spec.UseFullOverrideName {
-		getOptions := &actions.GetOptions{
-			ReleaseName:       operation.Name,
-			Namespace:         operation.Namespace,
-			KubernetesOptions: &actions.KubernetesClient{Config: r.Config},
-		}
-		fullOverrideName, err := getOptions.GetHelmFullOverrideName()
-		if err != nil {
-			r.Log.Error(err, "get full override name error")
-		} else if fullOverrideName != "" {
-			resourceName = fullOverrideName
-		}
-	}
-
 	if resourceName == "" {
 		return false, errors.New("get resource name error")
 	}

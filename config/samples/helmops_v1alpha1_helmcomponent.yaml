@@ -57,7 +57,7 @@ spec:
     resource: Deployment
     jsonPath: status.availableReplicas
     valueJsonPath: status.replicas 
-    name: "{{ .Release.Name }}-log-test" # TODO: Add helm release support
+    name: "{{ .Release.FullOverrideName }}" # TODO: Add helm release support
   returnValues: 
   - name: lishijun.test
     apiGroup: apps
@@ -67,5 +67,5 @@ spec:
     - "metadata.name"
     - "metadata.namespace"
     valueTemplate: "%s-%s"
-    resourceName: "{{ .Release.Name }}-log-test"
+    resourceName: "{{ .Release.FullOverrideName }}"
     
