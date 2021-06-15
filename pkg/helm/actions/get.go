@@ -35,38 +35,50 @@ func (i *GetOptions) GetHelmFullOverrideName() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var fullOverrideName interface{}
+	var overrideName interface{}
+	var ok bool = false
+	var overrideNameOk bool = false
 	if release.Config != nil {
-		fullOverrideName, ok := release.Config["fullnameOverride"]
-		if !ok || fullOverrideName == "" {
-			name := release.Chart.Metadata.Name
-			overrideName, ok := release.Config["nameOverride"]
-			if ok && overrideName != "" {
-				overrideNameStr, ok := overrideName.(string)
-				if ok {
-					name = overrideNameStr
-				}
-			}
-			if strings.Contains(release.Name, name) {
-				returnName := release.Name
-				if len(returnName) > 63 {
-					returnName = string(returnName[:63])
-				}
-				returnName = strings.TrimSuffix(returnName, "-")
-				return returnName, nil
-			} else {
-				returnName := fmt.Sprintf("%s-%s", release.Name, name)
-				if len(returnName) > 63 {
-					returnName = string(returnName[:63])
-				}
-				returnName = strings.TrimSuffix(returnName, "-")
-				return returnName, nil
-			}
-		} else {
-			fullOverrideNameStr, ok := fullOverrideName.(string)
-			if ok {
-				return fullOverrideNameStr, nil
-			}
+		fullOverrideName, ok = release.Config["fullnameOverride"]
+		overrideName, overrideNameOk = release.Config["nameOverride"]
+	}
+	if !ok {
+		if release.Chart.Values != nil {
+			fullOverrideName, ok = release.Chart.Values["fullnameOverride"]
+			overrideName, overrideNameOk = release.Chart.Values["nameOverride"]
 		}
 	}
+
+	if !ok || fullOverrideName == "" {
+		name := release.Chart.Metadata.Name
+		if overrideNameOk && overrideName != "" {
+			overrideNameStr, ok := overrideName.(string)
+			if ok {
+				name = overrideNameStr
+			}
+		}
+		if strings.Contains(release.Name, name) {
+			returnName := release.Name
+			if len(returnName) > 63 {
+				returnName = string(returnName[:63])
+			}
+			returnName = strings.TrimSuffix(returnName, "-")
+			return returnName, nil
+		} else {
+			returnName := fmt.Sprintf("%s-%s", release.Name, name)
+			if len(returnName) > 63 {
+				returnName = string(returnName[:63])
+			}
+			returnName = strings.TrimSuffix(returnName, "-")
+			return returnName, nil
+		}
+	} else {
+		fullOverrideNameStr, ok := fullOverrideName.(string)
+		if ok {
+			return fullOverrideNameStr, nil
+		}
+	}
+
 	return release.Name, nil
 }

@@ -1,7 +1,7 @@
 apiVersion: helmops.shijunlee.net/v1alpha1
 kind: HelmOperation
 metadata:
-  name: log-test
+  name: helmops-test-operation
 spec:
   # Add fields here
   values: {}
