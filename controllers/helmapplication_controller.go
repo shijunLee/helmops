@@ -495,12 +495,15 @@ func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context
 			r.Log.Info("obj marshal json error", "errInfo", err)
 			return nil, err
 		}
+		r.Log.Info("get return data object info", "ObjectJson", string(jsonData))
 		var values []interface{}
 		for _, jsonPath := range item.JSONPaths {
+
 			data := gojsonq.New().FromString(string(jsonData)).Find(jsonPath)
 			if data != nil {
 				values = append(values, data)
 			}
+			r.Log.Info("get json path from data error", "jsonPath", jsonPath, "Data", data)
 		}
 		var returnValue = ""
 		if item.ValueTemplate != "" {
