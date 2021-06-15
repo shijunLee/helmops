@@ -14,7 +14,7 @@ func Test_GetHelmFullOverrideName(t *testing.T) {
 	}
 	name, err := getOptions.GetHelmFullOverrideName()
 	if err != nil {
-		t.Fatal(err)
+		return
 	}
 	fmt.Println(name)
 

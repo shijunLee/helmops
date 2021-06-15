@@ -105,6 +105,7 @@ type GoYAMLTemplate struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Cluster
 
 // HelmComponent is the Schema for the helmcomponents API
 type HelmComponent struct {
