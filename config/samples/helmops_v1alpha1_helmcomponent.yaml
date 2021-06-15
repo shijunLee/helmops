@@ -57,6 +57,7 @@ spec:
     resource: Deployment
     jsonPath: status.availableReplicas
     valueJsonPath: status.replicas
+    name: "{{ .Release.Name }}"
   returnValues: 
   - name: lishijun.test
     apiGroup: apps

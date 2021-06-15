@@ -161,6 +161,7 @@ func NewReleaseDef(name, namespace, chartName, chartVersion, chartRepoName strin
 		autoUpgrade:  autoUpgrade,
 		chartName:    chartName,
 		chartVersion: chartVersion,
+		chartRepo:    chartRepoName,
 		install:      install,
 		update:       upgrade,
 		uninstall:    uninstall,
