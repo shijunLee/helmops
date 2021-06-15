@@ -92,7 +92,7 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			l.Error(err, "remove finalizer error")
 			return ctrl.Result{}, err
 		}
-		controllerutil.RemoveFinalizer(helmApplication, helmRepoFinalizer)
+		controllerutil.RemoveFinalizer(helmApplication, helmApplicationFinalizer)
 		err = r.Client.Update(ctx, helmApplication)
 		if err != nil {
 			l.Error(err, "update helm application error")
