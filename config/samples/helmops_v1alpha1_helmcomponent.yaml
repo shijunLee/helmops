@@ -67,5 +67,5 @@ spec:
     - "name"
     - "namespace"
     valueTemplate: "%s-%s"
-    resourceName: "{{ .Release.Name }}"
+    resourceName: "{{ .Release.Name }}-log-test"
     

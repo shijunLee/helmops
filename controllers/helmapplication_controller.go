@@ -504,6 +504,7 @@ func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context
 		}
 		var returnValue = ""
 		if item.ValueTemplate != "" {
+			r.Log.Info("get return data info with fmt", "ValueTemplate", item.ValueTemplate, "Values", values)
 			returnValue = fmt.Sprintf(item.ValueTemplate, values...)
 			resultMap[item.Name] = returnValue
 		} else if len(values) == 1 {
