@@ -13,7 +13,7 @@ spec:
         }
   autoUpdate: false
   chartRepoName: tpaas-itg
-  chartVersion: 0.0.1
+  chartVersion: 0.1.0
   chartName: log-test
   create:
     description: "create a log test"
@@ -56,8 +56,8 @@ spec:
     version: v1
     resource: Deployment
     jsonPath: status.availableReplicas
-    valueJsonPath: status.replicas
-    name: "{{ .Release.Name }}"
+    valueJsonPath: status.replicas 
+    name: "{{ .Release.Name }}-log-test" # TODO: Add helm release support
   returnValues: 
   - name: lishijun.test
     apiGroup: apps

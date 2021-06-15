@@ -400,10 +400,14 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 	if resourceName == "" {
 		return false, errors.New("get resource name error")
 	}
+	r.Log.Info("Get status resource info", "ReleaseResourceName", resourceName, "Namespace", operation.Namespace,
+		"Group", s.APIGroup, "Kind", s.Kind, "Version", s.Version)
 	obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{Group: s.APIGroup, Version: s.Version, Kind: s.Kind})
 	err = r.Client.Get(ctx, types.NamespacedName{Name: resourceName, Namespace: operation.Namespace}, obj)
 	if err != nil {
+		r.Log.Error(err, "get status object for release error", "ReleaseResourceName", resourceName, "Namespace", operation.Namespace,
+			"Group", s.APIGroup, "Kind", s.Kind, "Version", s.Version)
 		return false, nil
 	}
 	// user jsonq get the resource json path values and cmp the component yaml set values for the resource
