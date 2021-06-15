@@ -391,7 +391,7 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 		return false, nil
 	}
 	releaseDefaultValueMap := getReleaseStatusMap(operation)
-	resourceName, err := renderStringUseGoTemplate(ctx, s.Name, releaseDefaultValueMap)
+	resourceName, err := r.renderStringUseGoTemplate(ctx, s.Name, releaseDefaultValueMap)
 	if err != nil {
 		r.Log.Info("render string use go template in watch step release ready error", "errInfo", err)
 		return false, err
@@ -435,8 +435,9 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 }
 
 //renderStringUseGoTemplate render template string use go template
-func renderStringUseGoTemplate(ctx context.Context, templateString string, values map[string]interface{}) (string, error) {
+func (r *HelmApplicationReconciler) renderStringUseGoTemplate(ctx context.Context, templateString string, values map[string]interface{}) (string, error) {
 	var result = ""
+	r.Log.Info("renderStringUseGoTemplate render info", "Template String", templateString, "Value", values)
 	// use go txt template for get the resource name from config
 	tt := template.New("gotpl").Funcs(sprig.TxtFuncMap())
 	tt, err := tt.Parse(templateString)
@@ -446,9 +447,11 @@ func renderStringUseGoTemplate(ctx context.Context, templateString string, value
 		if err == nil {
 			result = objBuff.String()
 		} else {
+			r.Log.Error(err, "template string with go template error")
 			return "", err
 		}
 	} else {
+		r.Log.Error(err, "template parse string with go template error")
 		return "", err
 	}
 	return result, nil
@@ -472,7 +475,7 @@ func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context
 	for _, item := range returnValuesDefines {
 		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		obj.SetGroupVersionKind(schema.GroupVersionKind{Group: item.APIGroup, Version: item.Version, Kind: item.Kind})
-		resourceName, err := renderStringUseGoTemplate(ctx, item.ResourceName, releaseDefineValues)
+		resourceName, err := r.renderStringUseGoTemplate(ctx, item.ResourceName, releaseDefineValues)
 		if err != nil {
 			r.Log.Info("get resource with go template in getStepReleaseReturnData error", "errorInfo", err)
 			return nil, err
