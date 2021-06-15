@@ -36,12 +36,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	"github.com/shijunLee/helmops/pkg/cue"
+	"github.com/shijunLee/helmops/pkg/helm/actions"
 	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
@@ -52,6 +54,7 @@ const (
 // HelmApplicationReconciler reconciles a HelmApplication object
 type HelmApplicationReconciler struct {
 	client.Client
+	Config *rest.Config
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
@@ -390,11 +393,26 @@ func (r *HelmApplicationReconciler) watchStepReleaseReady(ctx context.Context, o
 		r.Log.Info("check helm component is error", "errInfo", err)
 		return false, nil
 	}
-	releaseDefaultValueMap := getReleaseStatusMap(operation)
+	releaseDefaultValueMap := r.getReleaseStatusMap(operation)
+
 	resourceName, err := r.renderStringUseGoTemplate(ctx, s.Name, releaseDefaultValueMap)
 	if err != nil {
 		r.Log.Info("render string use go template in watch step release ready error", "errInfo", err)
 		return false, err
+	}
+
+	if helmComponent.Spec.UseFullOverrideName {
+		getOptions := &actions.GetOptions{
+			ReleaseName:       operation.Name,
+			Namespace:         operation.Namespace,
+			KubernetesOptions: &actions.KubernetesClient{Config: r.Config},
+		}
+		fullOverrideName, err := getOptions.GetHelmFullOverrideName()
+		if err != nil {
+			r.Log.Error(err, "get full override name error")
+		} else if fullOverrideName != "" {
+			resourceName = fullOverrideName
+		}
 	}
 
 	if resourceName == "" {
@@ -475,7 +493,7 @@ func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context
 	}
 	var resultMap = map[string]interface{}{}
 	returnValuesDefines := helmComponent.Spec.ReturnValues
-	releaseDefineValues := getReleaseStatusMap(operation)
+	releaseDefineValues := r.getReleaseStatusMap(operation)
 	for _, item := range returnValuesDefines {
 		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		obj.SetGroupVersionKind(schema.GroupVersionKind{Group: item.APIGroup, Version: item.Version, Kind: item.Kind})
@@ -529,18 +547,28 @@ func (r *HelmApplicationReconciler) getStepReleaseReturnData(ctx context.Context
 }
 
 // getReleaseStatusMap get release status map for operation
-func getReleaseStatusMap(operation *helmopsv1alpha1.HelmOperation) map[string]interface{} {
+func (r *HelmApplicationReconciler) getReleaseStatusMap(operation *helmopsv1alpha1.HelmOperation) map[string]interface{} {
 	if operation == nil {
 		return map[string]interface{}{}
 	}
+	fullOverrideName := operation.Name
 	releaseName := operation.Name
 	releaseNamespace := operation.Namespace
-
+	getOptions := &actions.GetOptions{
+		ReleaseName:       operation.Name,
+		Namespace:         operation.Namespace,
+		KubernetesOptions: &actions.KubernetesClient{Config: r.Config},
+	}
+	overrideNameInfo, err := getOptions.GetHelmFullOverrideName()
+	if err == nil {
+		fullOverrideName = overrideNameInfo
+	}
 	// set release param for template the resource name
 	var releaseDefaultValueMap = map[string]interface{}{
 		"Release": map[string]string{
-			"Name":      releaseName,
-			"Namespace": releaseNamespace,
+			"Name":             releaseName,
+			"Namespace":        releaseNamespace,
+			"FullOverrideName": fullOverrideName,
 		},
 		"Chart": map[string]interface{}{
 			"Name":    operation.Spec.ChartName,

@@ -64,8 +64,8 @@ spec:
     version: v1
     kind: Deployment
     jsonPaths:
-    - "name"
-    - "namespace"
+    - "metadata.name"
+    - "metadata.namespace"
     valueTemplate: "%s-%s"
     resourceName: "{{ .Release.Name }}-log-test"
     

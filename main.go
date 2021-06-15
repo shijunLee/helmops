@@ -122,6 +122,7 @@ func main() {
 
 	if err = (&controllers.HelmApplicationReconciler{
 		Client: mgr.GetClient(),
+		Config: mgr.GetConfig(),
 		Log:    ctrl.Log.WithName("controllers").WithName("HelmApplication"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

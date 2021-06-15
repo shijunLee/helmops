@@ -10,6 +10,7 @@ type GetValuesOptions struct {
 	AllValues         bool
 }
 
+//Run do get value method
 func (i *GetValuesOptions) Run() (map[string]interface{}, error) {
 	cfg, err := i.KubernetesOptions.GetHelmActionConfiguration(i.Namespace)
 	if err != nil {
@@ -17,5 +18,6 @@ func (i *GetValuesOptions) Run() (map[string]interface{}, error) {
 	}
 	getValuesConfig := helmactions.NewGetValues(cfg)
 	getValuesConfig.AllValues = i.AllValues
+	getValuesConfig.Version = i.Version
 	return getValuesConfig.Run(i.ReleaseName)
 }
