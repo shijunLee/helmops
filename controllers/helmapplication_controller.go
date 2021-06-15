@@ -224,7 +224,10 @@ func (r *HelmApplicationReconciler) removeFinalizer(ctx context.Context, helmApp
 		var namespace = helmApplication.Namespace
 		helmOperation := &helmopsv1alpha1.HelmOperation{}
 		err := r.Client.Get(ctx, types.NamespacedName{Name: operationName, Namespace: namespace}, helmOperation)
-		if err != nil && !k8serrors.IsNotFound(err) {
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				return nil
+			}
 			l.Error(err, "get helm operation error")
 			return err
 		}
