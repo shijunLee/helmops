@@ -12,5 +12,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: controller
-  newName: docker.shijunlee.local/library/helm-ops
-  newTag: 0.0.1-0c9b143
+  newName: helm-ops
+  newTag: 0.0.1-84652b3

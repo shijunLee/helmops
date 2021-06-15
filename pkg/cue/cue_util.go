@@ -8,10 +8,11 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	helmopsapi "github.com/shijunLee/helmops/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
+
+	helmopsapi "github.com/shijunLee/helmops/api/v1alpha1"
 )
 
 //ReleaseDef helm release def
@@ -149,7 +150,8 @@ type UninstallOptions struct {
 }
 
 // NewReleaseDef create new release def for cue template
-func NewReleaseDef(name, namespace, chartName, chartVersion, chartRepoName string, autoUpgrade bool, client *rest.RESTClient, valueCUE string) *ReleaseDef {
+func NewReleaseDef(name, namespace, chartName, chartVersion, chartRepoName string, autoUpgrade bool,
+	client *rest.RESTClient, valueCUE string, install *InstallOptions, update *UpgradeOptions, uninstall *UninstallOptions) *ReleaseDef {
 	return &ReleaseDef{
 		name:         name,
 		namespace:    namespace,

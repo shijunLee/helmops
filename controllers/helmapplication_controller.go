@@ -28,9 +28,6 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
-	"github.com/shijunLee/helmops/pkg/cue"
-	"github.com/shijunLee/helmops/pkg/helm/utils"
 	"github.com/thedevsaddam/gojsonq"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +39,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
+	"github.com/shijunLee/helmops/pkg/cue"
+	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 const (
@@ -320,10 +321,57 @@ func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Co
 
 		}
 	}
+	var componentInstall = helmComponent.Spec.Create
+	var componentUpgrade = helmComponent.Spec.Upgrade
+	var componentUninstall = helmComponent.Spec.Uninstall
+	var installOptions = &cue.InstallOptions{
+		DryRun:                   false,
+		Description:              componentInstall.Description,
+		SkipCRDs:                 componentInstall.SkipCRDs,
+		Timeout:                  componentInstall.Timeout,
+		NoHook:                   componentInstall.NoHook,
+		GenerateName:             componentInstall.GenerateName,
+		CreateNamespace:          componentInstall.CreateNamespace,
+		DisableOpenAPIValidation: componentInstall.DisableOpenAPIValidation,
+		IsUpgrade:                componentInstall.IsUpgrade,
+		WaitForJobs:              componentInstall.WaitForJobs,
+		Replace:                  componentInstall.Replace,
+		Wait:                     componentInstall.Wait,
+	}
+	updgradeOptions := &cue.UpgradeOptions{
+		Install:                  componentUpgrade.Install,
+		Devel:                    componentUpgrade.Devel,
+		Namespace:                namespace,
+		SkipCRDs:                 componentUpgrade.SkipCRDs,
+		Timeout:                  componentUpgrade.Timeout,
+		Wait:                     componentUpgrade.Wait,
+		DisableHooks:             componentUpgrade.DisableHooks,
+		DryRun:                   false,
+		Force:                    componentUpgrade.Force,
+		ResetValues:              componentUpgrade.ResetValues,
+		ReuseValues:              componentUpgrade.ReuseValues,
+		Recreate:                 componentUpgrade.Recreate,
+		MaxHistory:               componentUpgrade.MaxHistory,
+		Atomic:                   componentUpgrade.Atomic,
+		CleanupOnFail:            componentUpgrade.CleanupOnFail,
+		SubNotes:                 componentUpgrade.SubNotes,
+		Description:              componentUpgrade.Description,
+		DisableOpenAPIValidation: componentUpgrade.DisableOpenAPIValidation,
+		WaitForJobs:              componentUpgrade.WaitForJobs,
+		UpgradeCRDs:              componentUpgrade.UpgradeCRDs,
+	}
+	uninstallOptions := &cue.UninstallOptions{
+		DisableHooks:       componentUninstall.DisableHooks,
+		KeepHistory:        componentUninstall.KeepHistory,
+		Timeout:            componentUninstall.Timeout,
+		Description:        componentUninstall.Description,
+		DoNotDeleteRelease: componentUninstall.DoNotDeleteRelease,
+	}
+
 	var cueRef = cue.NewReleaseDef(stepDef.ComponentReleaseName, namespace,
 		helmComponent.Spec.ChartName, helmComponent.Spec.ChartVersion, helmComponent.Spec.ChartRepoName, false, nil,
-		helmComponent.Spec.ValuesTemplate.CUE.Template)
-	//TODO: add install upgrade and uninstall param to cue ref in here
+		helmComponent.Spec.ValuesTemplate.CUE.Template, installOptions, updgradeOptions, uninstallOptions)
+
 	return cueRef.BuildReleaseWorkload(refValues)
 }
 
