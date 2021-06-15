@@ -151,7 +151,7 @@ type UninstallOptions struct {
 
 // NewReleaseDef create new release def for cue template
 func NewReleaseDef(name, namespace, chartName, chartVersion, chartRepoName string, autoUpgrade bool,
-	client *rest.RESTClient, valueCUE string, install *InstallOptions, update *UpgradeOptions, uninstall *UninstallOptions) *ReleaseDef {
+	client *rest.RESTClient, valueCUE string, install *InstallOptions, upgrade *UpgradeOptions, uninstall *UninstallOptions) *ReleaseDef {
 	return &ReleaseDef{
 		name:         name,
 		namespace:    namespace,
@@ -161,6 +161,9 @@ func NewReleaseDef(name, namespace, chartName, chartVersion, chartRepoName strin
 		autoUpgrade:  autoUpgrade,
 		chartName:    chartName,
 		chartVersion: chartVersion,
+		install:      install,
+		update:       upgrade,
+		uninstall:    uninstall,
 	}
 }
 
