@@ -98,6 +98,7 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			l.Error(err, "update helm application error")
 			return ctrl.Result{}, err
 		}
+		return ctrl.Result{}, nil
 	}
 	l.Info("start application create")
 	// not define steps ,return not process
