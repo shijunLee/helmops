@@ -218,6 +218,23 @@ func (r *HelmApplicationReconciler) checkOperationIsExist(ctx context.Context, h
 }
 
 func (r *HelmApplicationReconciler) removeFinalizer(ctx context.Context, helmApplication *helmopsv1alpha1.HelmApplication) error {
+	l := r.Log.WithValues("helmapplication", helmApplication.Name, "Namesapce", helmApplication.Namespace)
+	for _, step := range helmApplication.Spec.Steps {
+		var operationName = step.ComponentReleaseName
+		var namespace = helmApplication.Namespace
+		helmOperation := &helmopsv1alpha1.HelmOperation{}
+		err := r.Client.Get(ctx, types.NamespacedName{Name: operationName, Namespace: namespace}, helmOperation)
+		if err != nil && !k8serrors.IsNotFound(err) {
+			l.Error(err, "get helm operation error")
+			return err
+		}
+
+		err = r.Client.Delete(ctx, helmOperation)
+		if err != nil && !k8serrors.IsNotFound(err) {
+			l.Error(err, "delete helm operation error")
+			return err
+		}
+	}
 	return nil
 }
 
