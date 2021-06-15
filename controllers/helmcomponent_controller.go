@@ -20,13 +20,14 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 )
 
 const (
@@ -59,7 +60,7 @@ func (r *HelmComponentReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		l.Error(err, "find helm component resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
-	if !helmComponent.DeletionTimestamp.IsZero() {
+	if helmComponent.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(helmComponent, helmComponentFinalizer) {
 			controllerutil.AddFinalizer(helmComponent, helmComponentFinalizer)
 			err = r.Client.Update(ctx, helmComponent)

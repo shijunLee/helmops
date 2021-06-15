@@ -78,7 +78,7 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		l.Error(err, "find helm application resource from client error", "ResourceName", req.Name, "ResourceName", req.Namespace)
 		return ctrl.Result{}, err
 	}
-	if !helmApplication.DeletionTimestamp.IsZero() {
+	if helmApplication.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(helmApplication, helmApplicationFinalizer) {
 			controllerutil.AddFinalizer(helmApplication, helmApplicationFinalizer)
 			err = r.Client.Update(ctx, helmApplication)
