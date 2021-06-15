@@ -87,7 +87,7 @@ func (r *HelmComponentReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 // do some system process like system delete process
-func (r *HelmComponentReconciler) removeFinalizer(ctx context.Context, operation *helmopsv1alpha1.HelmComponent) error {
+func (r *HelmComponentReconciler) removeFinalizer(ctx context.Context, component *helmopsv1alpha1.HelmComponent) error {
 	return nil
 }
 
