@@ -303,8 +303,6 @@ spec:
                     description: WaitForJobs wait for jobs exec success
                     type: boolean
                 type: object
-              useFullOverrideName:
-                type: boolean
               valuesTemplate:
                 description: Values the helm install values , if values update while
                   update the helm release

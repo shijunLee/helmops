@@ -33,9 +33,6 @@ type HelmComponentSpec struct {
 	ValuesTemplate ComponentTemplate `json:"valuesTemplate,omitempty"`
 	//AutoUpdate is auto update for release
 	AutoUpdate bool `json:"autoUpdate,omitempty"`
-
-	UseFullOverrideName bool `json:"useFullOverrideName,omitempty"`
-
 	//ChartRepoName the helmops repo name
 	ChartRepoName string `json:"chartRepoName,omitempty"`
 	//ChartVersion the version for the chart will install
