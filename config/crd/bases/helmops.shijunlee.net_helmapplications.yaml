@@ -62,6 +62,7 @@ spec:
                     parameters:
                       description: the component install params
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   type: object
                 type: array
             required:

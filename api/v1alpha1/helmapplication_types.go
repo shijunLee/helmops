@@ -79,8 +79,10 @@ type ComponentStep struct {
 	// only support clusterrole serviceaccount and other global resource
 	CheckIfExistNotInstall bool `json:"checkIfExistNotInstall,omitempty"`
 
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//+kubebuilder:validation:XPreserveUnknownFields
 	// the component install params
-	Parameters CreateParam `json:"parameters,omitempty"`
+	Parameters *CreateParam `json:"parameters,omitempty"`
 
 	// the values ref from before component release
 	ValuesRefComponentRelease []string `json:"ValuesRefComponentRelease,omitempty"`
