@@ -44,7 +44,6 @@ import (
 	helmopsv1alpha1 "github.com/shijunLee/helmops/api/v1alpha1"
 	"github.com/shijunLee/helmops/pkg/cue"
 	"github.com/shijunLee/helmops/pkg/helm/actions"
-	"github.com/shijunLee/helmops/pkg/helm/utils"
 )
 
 const (
@@ -256,7 +255,8 @@ func (r *HelmApplicationReconciler) getApplicationStepComponent(ctx context.Cont
 		return nil, errors.New("not define step component name")
 	}
 	var helmComponent = &helmopsv1alpha1.HelmComponent{}
-	err := r.Client.Get(ctx, types.NamespacedName{Namespace: utils.GetCurrentNameSpace(), Name: stepDef.ComponentName}, helmComponent)
+	// Component is global resource not set namespace
+	err := r.Client.Get(ctx, types.NamespacedName{Name: stepDef.ComponentName}, helmComponent)
 	if err != nil {
 		l.Error(err, "get helm component error")
 		return nil, err
