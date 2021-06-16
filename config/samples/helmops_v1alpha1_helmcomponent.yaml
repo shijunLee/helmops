@@ -8,8 +8,18 @@ spec:
     cue: 
       template: |
         parameter: {
+          image: {
+            repository: *"core.harbor.domain/library/busybox" |  string
+            tag: *"1.31.1" |  string
+            pullPolicy: *"IfNotPresent"| string
+          }
         }
         output: {
+          image: {
+            repository: parameter.image.repository
+            pullPolicy: parameter.image.pullPolicy
+            tag: parameter.image.tag
+          }
         }
   autoUpdate: false
   chartRepoName: tpaas-itg

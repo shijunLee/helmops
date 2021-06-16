@@ -61,25 +61,7 @@ spec:
                       type: string
                     parameters:
                       description: the component install params
-                      items:
-                        description: 'TODO: need add procees ComponentParameter the
-                          component install param ,notice not both set value and ref
-                          ,if set will use value as default'
-                        properties:
-                          name:
-                            description: the parameter name
-                            type: string
-                          type:
-                            description: the value type for parameter , will try to
-                              convert value to the set type not set will use default
-                              string
-                            type: string
-                          value:
-                            description: the value for parameter ,notice not both
-                              set value and ref ,if set will use value as default
-                            type: string
-                        type: object
-                      type: array
+                      type: object
                   type: object
                 type: array
             required:

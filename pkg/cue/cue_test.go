@@ -10,6 +10,48 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func Test_CUEValues(t *testing.T) {
+	const info = `
+	parameter: {
+		image: {
+		  repository: *"core.harbor.domain/library/busybox" |  string
+		  tag: *"1.31.1" |  string
+		  pullPolicy: *"IfNotPresent" | string
+		}
+	  }
+	  output: {
+		image: {
+		  repository: parameter.image.repository
+		  pullPolicy: parameter.image.pullPolicy
+		  tag: parameter.image.tag
+		}
+	  }`
+	ctx := cuecontext.New()
+	values := ctx.CompileString(info)
+	configValues := map[string]interface{}{
+		"image": map[string]interface{}{
+			"repository": "tpaas-registry-itg.jdcloud.com",
+			"pullPolicy": "IfNotPresent",
+			"tag":        "1.31.1",
+		},
+	}
+	values = values.FillPath(cue.ParsePath("parameter"), configValues)
+	result := values.LookupPath(cue.ParsePath("output"))
+	var resultMap = map[string]interface{}{}
+	err := result.Decode(&resultMap)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	data, err := json.Marshal(resultMap)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(string(data))
+}
+
 func Test_CUE(t *testing.T) {
 	const config = `
 msg:   "Hello \(place)!"

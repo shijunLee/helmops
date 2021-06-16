@@ -129,8 +129,13 @@ func (r *HelmApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 				continue
 			}
 		}
+		var createParam = map[string]interface{}{}
+		for k, v := range values {
+			createParam[k] = v
+		}
+		createParam["@CurrentUserSetValues"] = step.Parameters.Object
 
-		helmOperation, err := r.buildStepReleaseHelmOperation(ctx, helmApplication.Namespace, step, values)
+		helmOperation, err := r.buildStepReleaseHelmOperation(ctx, helmApplication.Namespace, step, createParam)
 		if err != nil {
 			//TODO: update status for the application ,build operation failed
 			l.Error(err, "build helm operation error")
@@ -333,6 +338,16 @@ func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Co
 		return nil, err
 	}
 	var refValues = map[string]interface{}{}
+	// first user current user set values
+	appSetValues, ok := values["@CurrentUserSetValues"]
+	if ok {
+		appSetValueMap, ok := appSetValues.(map[string]interface{})
+		if ok {
+			for k, v := range appSetValueMap {
+				refValues[k] = v
+			}
+		}
+	}
 	for _, item := range stepDef.ValuesRefComponentRelease {
 		value, ok := values[item]
 		if ok {
@@ -345,6 +360,7 @@ func (r *HelmApplicationReconciler) buildStepReleaseHelmOperation(ctx context.Co
 
 		}
 	}
+
 	var componentInstall = helmComponent.Spec.Create
 	var componentUpgrade = helmComponent.Spec.Upgrade
 	var componentUninstall = helmComponent.Spec.Uninstall

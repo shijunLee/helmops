@@ -80,23 +80,10 @@ type ComponentStep struct {
 	CheckIfExistNotInstall bool `json:"checkIfExistNotInstall,omitempty"`
 
 	// the component install params
-	Parameters []ComponentParameter `json:"parameters,omitempty"`
+	Parameters CreateParam `json:"parameters,omitempty"`
 
 	// the values ref from before component release
 	ValuesRefComponentRelease []string `json:"ValuesRefComponentRelease,omitempty"`
-}
-
-// TODO: need add procees
-// ComponentParameter the component install param ,notice not both set value and ref ,if set will use value as default
-type ComponentParameter struct {
-	// the parameter name
-	Name string `json:"name,omitempty"`
-
-	// the value for parameter ,notice not both set value and ref ,if set will use value as default
-	Value string `json:"value,omitempty"`
-
-	// the value type for parameter , will try to convert value to the set type not set will use default string
-	Type string `json:"type,omitempty"`
 }
 
 //+kubebuilder:object:root=true
