@@ -11,6 +11,8 @@ spec:
     parameters:
       image: 
         pullPolicy: IfNotPresent
-        repository: tpaas-registry-itg.jdcloud.com
+        repository: tpaas-registry-itg.jdcloud.com/library/busybox
         tag: "1.31.1"
+      imagePullSecrets:
+      - name: tpaas-itg  
     ValuesRefComponentRelease: []

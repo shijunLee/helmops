@@ -16,8 +16,11 @@ func Test_CUEValues(t *testing.T) {
 		image: {
 		  repository: *"core.harbor.domain/library/busybox" |  string
 		  tag: *"1.31.1" |  string
-		  pullPolicy: *"IfNotPresent" | string
+		  pullPolicy: *"IfNotPresent"| string
 		}
+		imagePullSecrets: [...{
+		  name: string
+		}]
 	  }
 	  output: {
 		image: {
@@ -25,6 +28,7 @@ func Test_CUEValues(t *testing.T) {
 		  pullPolicy: parameter.image.pullPolicy
 		  tag: parameter.image.tag
 		}
+		imagePullSecrets: parameter.imagePullSecrets
 	  }`
 	ctx := cuecontext.New()
 	values := ctx.CompileString(info)
@@ -34,6 +38,11 @@ func Test_CUEValues(t *testing.T) {
 			"pullPolicy": "IfNotPresent",
 			"tag":        "1.31.1",
 		},
+		// "imagePullSecrets": []map[string]interface{}{
+		// 	{
+		// 		"name": "tpaas-itg",
+		// 	},
+		// },
 	}
 	values = values.FillPath(cue.ParsePath("parameter"), configValues)
 	result := values.LookupPath(cue.ParsePath("output"))
